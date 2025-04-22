@@ -1,0 +1,15 @@
+{
+    "eslint.validate": ["javascript", "typescript"],
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "editor.formatOnSave": true,
+    "typescript.tsdk": "node_modules\\typescript\\lib",
+    "files.eol": "\n",
+    "files.associations": {
+        "pre-commit": "shellscript",
+        "pre-push": "shellscript",
+        "commit-msg": "shellscript"
+    },
+    "editor.pasteAs.preferences": ["uri.path.absolute"]
+}
