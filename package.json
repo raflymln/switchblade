@@ -24,7 +24,11 @@
     ],
     "scripts": {
         "prepare": "husky",
-        "lint": "tsc --noEmit && eslint src --ext .ts,.tsx,.js,.jsx"
+        "lint": "tsc --noEmit && eslint src --ext .ts,.tsx,.js,.jsx",
+        "docs:dev": "vitepress dev docs",
+        "docs:build": "vitepress build docs",
+        "docs:preview": "vitepress preview docs",
+        "docs:deploy": "vitepress build docs"
     },
     "commitlint": {
         "extends": [
@@ -170,6 +174,7 @@
         "eslint-plugin-no-relative-import-paths": "^1.6.1",
         "eslint-plugin-prettier": "^5.2.5",
         "prettier": "^3.5.3",
-        "typescript": "^5.8.2"
+        "typescript": "^5.8.2",
+        "vitepress": "^1.6.3"
     }
 }
