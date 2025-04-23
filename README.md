@@ -66,7 +66,10 @@ import { Switchblade } from "@takodotid/switchblade";
 import { createHonoAdapter } from "@takodotid/switchblade/adapters/hono";
 import { serve } from "@hono/node-server";
 import { z } from "zod";
+import { extendZodWithOpenApi } from "zod-openapi";
 import { String } from "@sinclair/typebox";
+
+extendZodWithOpenApi(z);
 
 const app = new Switchblade();
 
@@ -80,8 +83,14 @@ app.post(
     },
     {
         body: {
-            name: z.string().min(2, "Name too short"), // Zod schema
-            email: String({ format: "email" }), // TypeBox schema
+            name: z.string().min(2, "Name too short").openapi({
+                description: "User name",
+                example: "John Doe",
+            }), // Zod schema
+            email: String({
+                format: "email",
+                description: "User email",
+            }), // TypeBox schema
         },
         responses: {
             201: {

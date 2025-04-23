@@ -3,16 +3,21 @@ import { Switchblade } from "../src/core/app";
 
 import { serve } from "@hono/node-server";
 import { z } from "zod";
+import { extendZodWithOpenApi } from "zod-openapi";
+
+extendZodWithOpenApi(z);
 
 const app = new Switchblade({
     basePath: "/api/v1",
     openapi: {
+        openapi: "3.1.0",
         info: {
             title: "Switchblade Example API",
             version: "1.0.0",
             description: "A comprehensive example of Switchblade framework",
         },
         servers: [{ url: "http://localhost:3000", description: "Local development server" }],
+        components: {},
     },
 });
 
@@ -61,13 +66,22 @@ app.group("/users", (group) => {
         },
         {
             body: {
-                name: z.string().min(2, "Name too short"),
-                email: z.string().email("Invalid email format"),
+                name: z.string().min(2, "Name too short").openapi({
+                    description: "The name of the user",
+                    example: "John Doe",
+                }),
+                email: z.string().email("Invalid email format").openapi({
+                    description: "The email of the user",
+                    maximum: 255,
+                }),
             },
             responses: {
                 201: {
                     "application/json": z.object({
-                        id: z.number(),
+                        id: z.number().openapi({
+                            description: "The ID of the created user",
+                            example: 123,
+                        }),
                         name: z.string(),
                         email: z.string().email(),
                     }),

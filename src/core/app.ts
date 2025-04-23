@@ -1,27 +1,12 @@
 import type { ErrorHandler, RouteHandler, Middleware, RequestSchema, ResponseSchema, OpenAPIMetadata, ValidationOptions, RouteOptions } from "./types";
+import type { OpenAPIV3_1 } from "openapi-types";
 
 /**
  * Configuration options for Switchblade.
  */
 export type Config = {
     basePath?: string;
-    openapi?: {
-        path?: string;
-        info: {
-            title: string;
-            version: string;
-            description?: string;
-        };
-        servers?: {
-            url: string;
-            description?: string;
-        }[];
-        components?: {
-            securitySchemes?: Record<string, unknown>;
-            schemas?: Record<string, unknown>;
-        };
-        security?: Record<string, unknown>[];
-    };
+    openapi?: OpenAPIV3_1.Document;
 };
 
 /**
