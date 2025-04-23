@@ -1,27 +1,29 @@
 {
     "compilerOptions": {
         "baseUrl": ".",
-        "lib": ["ESNext"],
-        "target": "ESNext",
+        "lib": [
+            "ES2024"
+        ],
         "module": "ESNext",
         "moduleResolution": "node",
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "jsx": "preserve",
-        "allowJs": true,
+        "target": "ES2024",
         "strict": true,
-        "noEmit": true,
+        "esModuleInterop": true,
         "skipLibCheck": true,
-        "types": ["@types/node"],
-        "resolveJsonModule": true,
-        "isolatedModules": true,
         "paths": {
-            "@/*": ["src/*"],
-            "@/package.json": ["package.json"],
-            "undici-types": ["./node_modules/undici-types"]
+            "@/*": [
+                "src/*"
+            ],
+            "@/package.json": [
+                "package.json"
+            ],
         },
-        "declaration": false
+        "declaration": true
     },
-    "include": ["src"],
-    "exclude": ["node_modules"]
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
 }

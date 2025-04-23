@@ -6,7 +6,7 @@ export class SBResponse<Responses extends DefaultResponsesType = DefaultResponse
     constructor(public validationSchema?: ResponseSchema) {}
 
     statusCode: number = 200;
-    headers = new Headers();
+    headers: Headers = new Headers();
     response: Response | null = null;
 
     status(code: number) {
@@ -65,7 +65,7 @@ export class SBResponse<Responses extends DefaultResponsesType = DefaultResponse
         return this.response;
     }
 
-    end() {
+    end(): Response {
         return new Response(null, {
             status: this.statusCode,
             headers: this.headers,

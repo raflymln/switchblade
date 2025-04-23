@@ -4,8 +4,8 @@ export default defineConfig({
     entry: ["src/index.ts", "src/adapters/hono.ts"],
     format: ["esm"],
     dts: true,
+    platform: "node",
+    target: "es2024",
     clean: true,
-    minify: true,
     sourcemap: true,
-    target: "es2022",
 });

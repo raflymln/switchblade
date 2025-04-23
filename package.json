@@ -2,15 +2,6 @@
     "name": "@takodotid/switchblade",
     "version": "1.0.0",
     "description": "2nd level Javascript framework abstraction",
-    "type": "module",
-    "repository": "https://github.com/takodotid/switchblade",
-    "bugs": "https://github.com/takodotid/switchblade/issues",
-    "license": "MIT",
-    "author": {
-        "name": "Rafly Maulana",
-        "email": "me@raflymaulana.me",
-        "url": "https://raflymaulana.me"
-    },
     "keywords": [
         "zod",
         "hono",
@@ -22,6 +13,15 @@
         "deno",
         "typebox"
     ],
+    "bugs": "https://github.com/takodotid/switchblade/issues",
+    "repository": "https://github.com/takodotid/switchblade",
+    "license": "MIT",
+    "author": {
+        "name": "Rafly Maulana",
+        "email": "me@raflymaulana.me",
+        "url": "https://raflymaulana.me"
+    },
+    "type": "module",
     "exports": {
         ".": {
             "import": {
@@ -29,23 +29,23 @@
                 "default": "./dist/index.js"
             }
         },
-        "./adapters/hono": {
+        "./adapters/*": {
             "import": {
-                "types": "./dist/adapters/hono.d.ts",
-                "default": "./dist/adapters/hono.js"
+                "types": "./dist/adapters/*.d.ts",
+                "default": "./dist/adapters/*.js"
             }
         }
     },
     "types": "./dist/index.d.ts",
     "scripts": {
-        "prepare": "husky",
-        "lint": "tsc --noEmit && eslint src --ext .ts,.tsx,.js,.jsx",
         "build": "tsup",
-        "prepublishOnly": "npm run build",
-        "docs:dev": "vitepress dev docs",
         "docs:build": "vitepress build docs",
+        "docs:deploy": "vitepress build docs",
+        "docs:dev": "vitepress dev docs",
         "docs:preview": "vitepress preview docs",
-        "docs:deploy": "vitepress build docs"
+        "lint": "tsc --noEmit && eslint src --ext .ts,.tsx,.js,.jsx",
+        "prepare": "husky",
+        "prepublishOnly": "npm run build"
     },
     "commitlint": {
         "extends": [
@@ -167,7 +167,6 @@
             "prettier/prettier": "error"
         }
     },
-    "packageManager": "pnpm@10.8.0",
     "dependencies": {
         "@hono/node-server": "^1.14.1",
         "@hono/zod-openapi": "^0.19.5",
@@ -203,14 +202,15 @@
         "zod": "^3.0.0"
     },
     "peerDependenciesMeta": {
-        "zod": {
-            "optional": true
-        },
         "@sinclair/typebox": {
             "optional": true
         },
         "hono": {
             "optional": true
+        },
+        "zod": {
+            "optional": true
         }
-    }
+    },
+    "packageManager": "pnpm@10.8.0"
 }
