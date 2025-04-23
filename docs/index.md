@@ -6,7 +6,6 @@ hero:
     text: Powerful Backend Framework
     tagline: Validation-First. OpenAPI-Driven. Adapter-Friendly.
     image:
-        src: /logo.png
         alt: Switchblade Logo
     actions:
         - theme: brand

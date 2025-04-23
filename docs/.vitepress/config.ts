@@ -3,12 +3,10 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
     title: "Switchblade",
     description: "A Modern Backend Framework for TypeScript Developers",
+    ignoreDeadLinks: true,
 
     // Theme configuration
     themeConfig: {
-        // Logo in the navbar
-        logo: "/logo.png",
-
         // Navigation links
         nav: [
             { text: "Home", link: "/" },
@@ -57,7 +55,7 @@ export default defineConfig({
         // Footer configuration
         footer: {
             message: "Released under the MIT License.",
-            copyright: "Copyright © 2024 Tako Digital",
+            copyright: "Copyright © 2024 PT Hobimu Jadi Cuan (Tako)",
         },
     },
 

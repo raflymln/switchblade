@@ -24,3 +24,4 @@ Thumbs.db
 
 # Vitepress
 docs/.vitepress/cache
+docs/.vitepress/dist
