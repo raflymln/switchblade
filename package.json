@@ -173,6 +173,7 @@
         "eslint-plugin-import": "^2.31.0",
         "eslint-plugin-no-relative-import-paths": "^1.6.1",
         "eslint-plugin-prettier": "^5.2.5",
+        "markdown-it-task-lists": "^2.1.1",
         "prettier": "^3.5.3",
         "typescript": "^5.8.2",
         "vitepress": "^1.6.3"

@@ -1,5 +1,7 @@
 import { defineConfig } from "vitepress";
 
+import taskLists from "markdown-it-task-lists";
+
 export default defineConfig({
     title: "Switchblade",
     description: "A Modern Backend Framework for TypeScript Developers",
@@ -64,6 +66,9 @@ export default defineConfig({
         theme: {
             light: "github-light",
             dark: "github-dark",
+        },
+        config: (md) => {
+            md.use(taskLists);
         },
     },
 
