@@ -1,6 +1,41 @@
-import type { InferResponseSchema, ResponseSchema, DefaultResponsesType, CookieOptions } from "./types";
+import type { AnyValidationSchema, CookieOptions, InferValidationSchema } from "@/index";
 
-import { validate } from "./validation";
+import { validate } from "@/index";
+
+type GetContentTypes<Responses extends DefaultResponsesType, StatusCode extends keyof Responses> = Responses[StatusCode] extends { content: infer C } ? C : never;
+type GetContentTypeForType<Responses extends DefaultResponsesType, StatusCode extends keyof Responses, ContentType extends string> = Responses[StatusCode] extends {
+    content: { [K in ContentType]: infer T };
+}
+    ? T
+    : unknown;
+
+/**
+ * Default response type for the response object.
+ * It's used for the response object.
+ * The mapping is [status code] => configuration object.
+ */
+export type DefaultResponsesType = Record<
+    number,
+    {
+        description?: string;
+        summary?: string;
+        content: Record<string, unknown>;
+        headers?: Record<string, unknown>;
+    }
+>;
+
+/**
+ * Validation schema for the response object.
+ * It's used for the response object.
+ * The mapping is [status code] => configuration object.
+ */
+export type ResponseSchema = Record<
+    number,
+    {
+        content: Record<string, AnyValidationSchema>;
+        headers?: Record<string, AnyValidationSchema>;
+    }
+>;
 
 export class SBResponse<Responses extends DefaultResponsesType = DefaultResponsesType> {
     constructor(public validationSchema?: ResponseSchema) {}
@@ -72,10 +107,10 @@ export class SBResponse<Responses extends DefaultResponsesType = DefaultResponse
         });
     }
 
-    send<StatusCode extends keyof Responses, ContentType extends keyof Responses[StatusCode]>(
+    send<StatusCode extends keyof Responses, ContentType extends keyof GetContentTypes<Responses, StatusCode>>(
         code: StatusCode,
         contentType: ContentType,
-        data: InferResponseSchema<Responses[StatusCode][ContentType]>
+        data: InferValidationSchema<GetContentTypes<Responses, StatusCode>[ContentType]>
     ) {
         if (typeof code === "number") this.status(code);
         if (typeof contentType === "string") this.setHeader("Content-Type", contentType);
@@ -93,11 +128,11 @@ export class SBResponse<Responses extends DefaultResponsesType = DefaultResponse
         return this.response;
     }
 
-    json<StatusCode extends keyof Responses>(code: StatusCode, data: InferResponseSchema<Responses[StatusCode] extends Record<"application/json", infer T> ? T : unknown>) {
-        return this.send(code, "application/json" as keyof Responses[StatusCode], data as InferResponseSchema<Responses[StatusCode][keyof Responses[StatusCode]]>);
+    json<StatusCode extends keyof Responses>(code: StatusCode, data: InferValidationSchema<GetContentTypeForType<Responses, StatusCode, "application/json">>) {
+        return this.send(code, "application/json" as never, data as never);
     }
 
-    text<StatusCode extends keyof Responses>(code: StatusCode, data: InferResponseSchema<Responses[StatusCode] extends Record<"text/plain", infer T> ? T : unknown>) {
-        return this.send(code, "text/plain" as keyof Responses[StatusCode], data as InferResponseSchema<Responses[StatusCode][keyof Responses[StatusCode]]>);
+    text<StatusCode extends keyof Responses>(code: StatusCode, data: InferValidationSchema<GetContentTypeForType<Responses, StatusCode, "text/plain">>) {
+        return this.send(code, "text/plain" as never, data as never);
     }
 }

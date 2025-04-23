@@ -1,8 +1,29 @@
-import type { AnyValidationSchema } from "./types";
-import type { TSchema } from "@sinclair/typebox";
+import type { Static, TSchema } from "@sinclair/typebox";
+import type { z } from "zod";
 
 import { Value } from "@sinclair/typebox/value";
 import { ZodSchema } from "zod";
+
+/**
+ * Any accepted validation schema.
+ * @warning Currently supports both TypeBox and Zod schemas.
+ */
+export type AnyValidationSchema = TSchema | z.ZodTypeAny | Record<string, unknown>;
+
+/**
+ * Infer the type of the validation schema from any accepted validation schema.
+ * @warning Currently supports both TypeBox and Zod schemas.
+ */
+export type InferValidationSchema<T> = T extends TSchema ? Static<T> : T extends z.ZodTypeAny ? z.infer<T> : T;
+
+/**
+ * Infer the type of the validation schema from a Record<key, schema> to Record<key, type>.
+ */
+export type InferValidationSchemaInRecord<T> = T extends object
+    ? {
+          [K in keyof T]: T[K] extends TSchema ? Static<T[K]> : T[K] extends z.ZodType<infer U> ? U : T[K];
+      }
+    : never;
 
 /**
  * Validate the data with the given schema.

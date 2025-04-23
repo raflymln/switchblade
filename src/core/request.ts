@@ -1,12 +1,25 @@
-import type { DefaultRequestType, InferRequestSchema, RequestSchema } from "./types";
+import type { AnyValidationSchema, InferValidationSchemaInRecord } from "@/index";
 
-import { validate } from "./validation";
+import { validate } from "@/index";
+
+/**
+ * Default request type for the request object.
+ * It's used for query, params, headers and body.
+ * The default type is an empty object.
+ */
+export type DefaultRequestType = Record<string, unknown>;
+
+/**
+ * Validation schema for the request object.
+ * It's used for query, params, headers and body.
+ */
+export type RequestSchema = Record<string, AnyValidationSchema>;
 
 export class SBRequest<Params = DefaultRequestType, Query = DefaultRequestType, Body = DefaultRequestType, Headers = DefaultRequestType, Cookies = DefaultRequestType> {
     constructor(
         public raw: Request,
         private bodyText: string,
-        public params: InferRequestSchema<Params> = {} as InferRequestSchema<Params>,
+        public params: InferValidationSchemaInRecord<Params> = {} as InferValidationSchemaInRecord<Params>,
         public validationSchema?: {
             params?: RequestSchema;
             query?: RequestSchema;
@@ -41,7 +54,7 @@ export class SBRequest<Params = DefaultRequestType, Query = DefaultRequestType, 
             }
         }
 
-        return headers as InferRequestSchema<Headers>;
+        return headers as InferValidationSchemaInRecord<Headers>;
     }
 
     get cookies() {
@@ -61,7 +74,7 @@ export class SBRequest<Params = DefaultRequestType, Query = DefaultRequestType, 
             }
         }
 
-        return cookieObj as InferRequestSchema<Cookies>;
+        return cookieObj as InferValidationSchemaInRecord<Cookies>;
     }
 
     get query() {
@@ -83,7 +96,7 @@ export class SBRequest<Params = DefaultRequestType, Query = DefaultRequestType, 
         return query as Query;
     }
 
-    get body(): InferRequestSchema<Body> {
+    get body(): InferValidationSchemaInRecord<Body> {
         if (this.contentType.includes("application/json")) {
             const data = JSON.parse(this.bodyText);
 
@@ -112,9 +125,9 @@ export class SBRequest<Params = DefaultRequestType, Query = DefaultRequestType, 
                 }
             }
 
-            return parsedBody as InferRequestSchema<Body>;
+            return parsedBody as InferValidationSchemaInRecord<Body>;
         }
 
-        return this.bodyText as InferRequestSchema<Body>;
+        return this.bodyText as unknown as InferValidationSchemaInRecord<Body>;
     }
 }
