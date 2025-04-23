@@ -173,7 +173,7 @@
     },
     "dependencies": {
         "@hono/zod-openapi": "^0.19.5",
-        "@scalar/hono-api-reference": "^0.7.3",
+        "@scalar/hono-api-reference": "^0.8.3",
         "@sinclair/typebox": "^0.34.33",
         "hono": "^4.7.7",
         "zod": "^3.24.3"
@@ -201,9 +201,9 @@
         "vitepress": "^1.6.3"
     },
     "peerDependencies": {
-        "@sinclair/typebox": "^0.30.0",
-        "hono": "^4.0.0",
-        "zod": "^3.0.0"
+        "@sinclair/typebox": "^0.34.33",
+        "hono": "^4.7.7",
+        "zod": "^3.24.3"
     },
     "peerDependenciesMeta": {
         "@sinclair/typebox": {
