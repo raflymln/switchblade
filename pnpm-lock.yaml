@@ -34,10 +34,10 @@ importers:
         specifier: ^1.14.1
         version: 1.14.1(hono@4.7.7)
       '@scalar/types':
-        specifier: ^0.1.3
-        version: 0.1.8
+        specifier: ^0.1.9
+        version: 0.1.9
       '@types/node':
-        specifier: ^22.13.14
+        specifier: ^22.14.1
         version: 22.14.1
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.21.0
@@ -49,7 +49,7 @@ importers:
         specifier: ^8.57.1
         version: 8.57.1
       eslint-config-prettier:
-        specifier: ^10.1.1
+        specifier: ^10.1.2
         version: 10.1.2(eslint@8.57.1)
       eslint-plugin-import:
         specifier: ^2.31.0
@@ -58,7 +58,7 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1
       eslint-plugin-prettier:
-        specifier: ^5.2.5
+        specifier: ^5.2.6
         version: 5.2.6(eslint-config-prettier@10.1.2(eslint@8.57.1))(eslint@8.57.1)(prettier@3.5.3)
       lefthook:
         specifier: ^1.11.11
@@ -76,7 +76,7 @@ importers:
         specifier: ^4.19.3
         version: 4.19.3
       typescript:
-        specifier: ^5.8.2
+        specifier: ^5.8.3
         version: 5.8.3
       undici-types:
         specifier: ^7.8.0
@@ -787,8 +787,8 @@ packages:
     resolution: {integrity: sha512-xlzatZ703JuxZOiU8eudaz/PbcgRqtBBmpIjpd2fjU50riuu1G4jbQEEMkQajaz11LhGpb4bgrNI0YvE6+Cx4g==}
     engines: {node: '>=18'}
 
-  '@scalar/types@0.1.8':
-    resolution: {integrity: sha512-VL1dcLB6w7V0htFxIgcdQeQhD5LFW1oqWk9ZWfzd9Ekl0a3bDGc81R5S3fk6qCHahPZR3cVPr4rHVQh0aX+FrQ==}
+  '@scalar/types@0.1.9':
+    resolution: {integrity: sha512-VyGZpiPHK3w+8AzypXF0Uj4sTb9n25FjQKgHxNmlnw/q4DMF6Y9m402LSWqu/N7p4fM/1dImkptf75FnKkzIwQ==}
     engines: {node: '>=18'}
 
   '@shikijs/core@2.5.0':
@@ -3524,7 +3524,7 @@ snapshots:
       type-fest: 4.40.0
       zod: 3.24.3
 
-  '@scalar/types@0.1.8':
+  '@scalar/types@0.1.9':
     dependencies:
       '@scalar/openapi-types': 0.2.0
       '@unhead/schema': 1.11.20
