@@ -3,7 +3,7 @@ name: Deploy Documentation to GitHub Pages
 on:
     # Runs on pushes targeting the default branch
     push:
-        branches: ["main", "master"]
+        branches: ["master"]
         paths:
             - "docs/**"
             - ".vitepress/**"
