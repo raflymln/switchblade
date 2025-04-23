@@ -6,6 +6,5 @@ export default defineConfig({
     dts: true,
     platform: "node",
     target: "es2024",
-    clean: true,
     sourcemap: true,
 });
