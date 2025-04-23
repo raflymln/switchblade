@@ -17,6 +17,9 @@ importers:
       '@scalar/hono-api-reference':
         specifier: ^0.7.3
         version: 0.7.5(hono@4.7.7)
+      '@sinclair/typebox':
+        specifier: ^0.34.33
+        version: 0.34.33
       hono:
         specifier: ^4.7.7
         version: 4.7.7
@@ -26,6 +29,9 @@ importers:
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
+      zod:
+        specifier: ^3.24.3
+        version: 3.24.3
     devDependencies:
       '@commitlint/cli':
         specifier: ^19.8.0
@@ -391,6 +397,9 @@ packages:
   '@scalar/types@0.1.8':
     resolution: {integrity: sha512-VL1dcLB6w7V0htFxIgcdQeQhD5LFW1oqWk9ZWfzd9Ekl0a3bDGc81R5S3fk6qCHahPZR3cVPr4rHVQh0aX+FrQ==}
     engines: {node: '>=18'}
+
+  '@sinclair/typebox@0.34.33':
+    resolution: {integrity: sha512-5HAV9exOMcXRUxo+9iYB5n09XxzCXnfy4VTNW4xnDv+FgjzAGY989C28BIdljKqmF+ZltUwujE3aossvcVtq6g==}
 
   '@types/conventional-commits-parser@5.0.1':
     resolution: {integrity: sha512-7uz5EHdzz2TqoMfV7ee61Egf5y6NkcO4FB/1iCCQnbeiI1F3xzv3vK5dBCXUCLQgGYS+mUeigK1iKQzvED+QnQ==}
@@ -1971,6 +1980,8 @@ snapshots:
       nanoid: 5.1.5
       type-fest: 4.40.0
       zod: 3.24.3
+
+  '@sinclair/typebox@0.34.33': {}
 
   '@types/conventional-commits-parser@5.0.1':
     dependencies:

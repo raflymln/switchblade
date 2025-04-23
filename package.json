@@ -1,7 +1,7 @@
 {
     "name": "switchblade",
     "version": "1.0.0",
-    "description": "Zod powered backend framework built on top of Hono",
+    "description": "2nd level Javascript framework abstraction",
     "type": "module",
     "bugs": "https://github.com/raflymln/switchblade/issues",
     "repository": "https://github.com/raflymln/switchblade",
@@ -150,9 +150,11 @@
         "@hono/node-server": "^1.14.1",
         "@hono/zod-openapi": "^0.19.5",
         "@scalar/hono-api-reference": "^0.7.3",
+        "@sinclair/typebox": "^0.34.33",
         "hono": "^4.7.7",
         "husky": "^9.1.7",
-        "tsx": "^4.19.3"
+        "tsx": "^4.19.3",
+        "zod": "^3.24.3"
     },
     "devDependencies": {
         "@commitlint/cli": "^19.8.0",
