@@ -71,8 +71,8 @@ export type ResponseSchema = Record<number, Record<string, AnyValidationSchema>>
 // --------------------------------------
 // Route Type
 // --------------------------------------
-export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => void | Promise<void>;
-export type Middleware = (req: SBRequest, res: SBResponse) => void | Promise<void>;
+export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => void | Promise<void> | Response | Promise<Response>;
+export type Middleware = (req: SBRequest, res: SBResponse) => void | Promise<void> | Response | Promise<Response>;
 export type RouteHandler<
     Params = DefaultRequestType, //
     Query = DefaultRequestType,

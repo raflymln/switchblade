@@ -1,9 +1,7 @@
 {
     "compilerOptions": {
         "baseUrl": ".",
-        "lib": [
-            "ESNext"
-        ],
+        "lib": ["ESNext"],
         "target": "ESNext",
         "module": "ESNext",
         "moduleResolution": "node",
@@ -14,24 +12,16 @@
         "strict": true,
         "noEmit": true,
         "skipLibCheck": true,
-        "types": [
-            "@types/node"
-        ],
+        "types": ["@types/node"],
         "resolveJsonModule": true,
         "isolatedModules": true,
         "paths": {
-            "@/*": [
-                "src/*"
-            ],
-            "@/package.json": [
-                "package.json"
-            ]
-        }
+            "@/*": ["src/*"],
+            "@/package.json": ["package.json"],
+            "undici-types": ["./node_modules/undici-types"]
+        },
+        "declaration": false
     },
-    "include": [
-        "src"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
+    "include": ["src"],
+    "exclude": ["node_modules"]
 }
