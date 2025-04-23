@@ -1,0 +1,8 @@
+pre-commit:
+  commands:
+    check:
+      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
+      run: pnpm lint
+      stage_fixed: true
+    commitlint:
+      run: pnpm exec commitlint -l
