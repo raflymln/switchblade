@@ -6,10 +6,18 @@ export default defineConfig({
     title: "Switchblade",
     description: "A Modern Backend Framework for TypeScript Developers",
     ignoreDeadLinks: true,
+    lastUpdated: true,
 
     // Theme configuration
     themeConfig: {
-        // Navigation links
+        lastUpdated: {
+            text: "Last Updated",
+        },
+
+        search: {
+            provider: "local",
+        },
+
         nav: [
             { text: "Home", link: "/" },
             { text: "Docs", link: "/guide/introduction" },
@@ -22,7 +30,6 @@ export default defineConfig({
             },
         ],
 
-        // Sidebar configuration
         sidebar: {
             "/guide/": [
                 {
@@ -51,17 +58,14 @@ export default defineConfig({
             ],
         },
 
-        // Social links
         socialLinks: [{ icon: "github", link: "https://github.com/takodotid/switchblade" }],
 
-        // Footer configuration
         footer: {
             message: "Released under the MIT License.",
             copyright: "Copyright © 2024 PT Hobimu Jadi Cuan (Tako)",
         },
     },
 
-    // Markdown configuration
     markdown: {
         theme: {
             light: "github-light",
@@ -72,10 +76,9 @@ export default defineConfig({
         },
     },
 
-    // Optional: Custom head tags
     head: [
         ["link", { rel: "icon", href: "/favicon.ico" }],
         ["meta", { name: "og:title", content: "Switchblade" }],
-        ["meta", { name: "og:description", content: "A Modern Backend Framework for TypeScript Developers" }],
+        ["meta", { name: "og:description", content: "2nd level Javascript framework abstraction" }],
     ],
 });

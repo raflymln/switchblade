@@ -1,15 +1,16 @@
 # Middleware
 
-Middleware in Switchblade provides a powerful way to intercept and modify requests and responses across your application.
-
-## What is Middleware?
-
-Middleware are functions that have access to the request and response objects. They can:
+Middleware in Switchblade provides a powerful way to intercept and modify requests and responses across your application. They can:
 
 - Modify request or response
 - Execute additional code
 - End the request-response cycle
-- Call the next middleware in the stack
+
+::: danger
+Middleware does **NOT** stop the request-response cycle by default. If you want to stop the request, you need to **THROW an ERROR**. Handle it using `app.onError` to catch and respond to the error.
+:::
+
+Middleware is applied in the chained order of the routes, see the [Advanced Routing](routing.md#middleware-advanced-routing) section for more details.
 
 ## Basic Middleware
 
@@ -42,88 +43,24 @@ app.get(
 );
 ```
 
-## Types of Middleware
-
-### Global Middleware
-
-Applies to all routes:
-
-```typescript
-// Middleware applied to every route
-app.use((req, res) => {
-    // CORS headers
-    res.setHeader("Access-Control-Allow-Origin", "*");
-});
-```
-
-### Route Group Middleware
-
-Applies to a specific group of routes:
-
-```typescript
-app.group("/api/v1", (group) => {
-    // Middleware for this group
-    group.use((req, res) => {
-        // API versioning logic
-        req.state.apiVersion = "v1";
-    });
-
-    // Routes in this group
-    group.get("/users", (req, res) => {
-        /* ... */
-    });
-    group.post("/users", (req, res) => {
-        /* ... */
-    });
-});
-```
-
-### Async Middleware
-
-```typescript
-app.use(async (req, res) => {
-    // Async operations like authentication
-    try {
-        const user = await validateToken(req.headers.authorization);
-        req.state.user = user;
-    } catch (error) {
-        return res.json(401, { error: "Invalid token" });
-    }
-});
-```
-
-## Middleware Composition
-
-```typescript
-// Reusable middleware functions
-const authenticate = async (req, res) => {
-    if (!req.headers.authorization) {
-        return res.json(401, { error: "Authentication required" });
-    }
-};
-
-const logRequest = (req, res) => {
-    console.log(`Request to ${req.url}`);
-};
-
-// Combine middlewares
-app.get("/protected", authenticate, logRequest, (req, res) => {
-    return res.json(200, { secretData: "Access granted" });
-});
-```
-
 ## Error Handling in Middleware
 
 ```typescript
-app.use((req, res, next) => {
-    try {
-        // Some potentially failing operation
-        next(); // Continue to next middleware
-    } catch (error) {
-        // Catch and handle errors
-        return res.json(500, { error: "Middleware error" });
-    }
-});
+const app = new Switchblade()
+    .onError((error, req, res) => {
+        if (error instanceof SomeSpecificError) {
+            return res.json(400, { error: "Specific error message" });
+        }
+
+        return res.json(500, { error: "Internal server error" });
+    })
+    .use((req, res) => {
+        if (!req.headers.authorization) {
+            throw new SomeSpecificError("Unauthorized");
+        }
+
+        // Continue processing
+    });
 ```
 
 ## Middleware State
@@ -141,37 +78,3 @@ app.get("/users", (req, res) => {
     console.log(req.state.requestId);
 });
 ```
-
-## Best Practices
-
-- Keep middleware functions focused
-- Handle errors appropriately
-- Avoid blocking operations in middleware
-- Use async/await for asynchronous tasks
-- Be mindful of middleware order
-
-## Common Use Cases
-
-- Authentication
-- Logging
-- CORS handling
-- Request parsing
-- Rate limiting
-- Error tracking
-
-## Limitations
-
-- Middleware runs in the order they are defined
-- Complex middleware can impact performance
-- Be cautious of middleware that modifies request/response extensively
-
-## Troubleshooting
-
-- Ensure middleware calls `next()` or ends the request
-- Check middleware execution order
-- Handle potential errors in middleware
-
-## Community and Support
-
-- [GitHub Issues](https://github.com/takodotid/switchblade/issues)
-- [Discord Community](https://discord.gg/your-discord-link)

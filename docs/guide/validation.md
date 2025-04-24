@@ -73,7 +73,7 @@ app.post(
 );
 ```
 
-## Validation Locations
+## Request Validation
 
 Switchblade allows validation across multiple request parts:
 
@@ -101,7 +101,9 @@ app.get(
 
 ## Response Validation
 
-Validate response data to ensure type safety:
+Switchblade supports comprehensive response validation using Zod or TypeBox.
+
+### Basic Response Validation
 
 ```typescript
 app.get(
@@ -114,135 +116,56 @@ app.get(
     {
         responses: {
             200: {
-                "application/json": z.object({
-                    users: z.array(
-                        z.object({
-                            id: z.number(),
-                            name: z.string(),
-                            email: z.string().email(),
-                        })
-                    ),
-                }),
+                description: "Successful user retrieval",
+                content: {
+                    "application/json": z.object({
+                        users: z.array(
+                            z.object({
+                                id: z.number(),
+                                name: z.string(),
+                                email: z.string().email(),
+                            })
+                        ),
+                    }),
+                },
             },
         },
     }
 );
 ```
 
-## Complex Validation Scenarios
-
-### Conditional Validation
+### Multiple Response Types
 
 ```typescript
-const RegistrationSchema = z
-    .object({
-        email: z.string().email(),
-        password: z.string().min(8),
-        accountType: z.enum(["personal", "business"]),
-        businessDetails: z
-            .object({
-                companyName: z.string(),
-                taxId: z.string(),
-            })
-            .optional()
-            .refine((data) => data !== undefined, { message: "Business details required for business accounts" }),
-    })
-    .refine((data) => data.accountType === "personal" || data.businessDetails, { message: "Business details are required for business accounts" });
-
 app.post(
-    "/register",
+    "/users",
     (req, res) => {
-        const userData = req.body;
-        return res.json(201, { message: "Registration successful" });
+        const newUser = { id: Date.now(), name: req.body.name };
+        return res.json(201, newUser);
     },
     {
-        body: RegistrationSchema,
+        responses: {
+            201: {
+                description: "User created successfully",
+                content: {
+                    "application/json": z.object({
+                        id: z.number(),
+                        name: z.string(),
+                    }),
+                },
+                headers: {
+                    Location: z.string().url(),
+                },
+            },
+            400: {
+                description: "Bad Request",
+                content: {
+                    "application/json": z.object({
+                        error: z.string(),
+                    }),
+                },
+            },
+        },
     }
 );
 ```
-
-## Validation Performance
-
-Switchblade's validation is designed to be lightweight and fast:
-
-- Validates only when necessary
-- Minimal runtime overhead
-- Catches errors early in the request lifecycle
-
-## Common Validation Patterns
-
-### Sanitization and Transformation
-
-```typescript
-const CleanUserSchema = z.object({
-    // Trim whitespace and convert to lowercase
-    email: z
-        .string()
-        .email()
-        .transform((val) => val.trim().toLowerCase()),
-
-    // Ensure age is a positive integer
-    age: z.number().int().positive(),
-
-    // Remove extra whitespace from name
-    name: z.string().transform((val) => val.trim()),
-});
-```
-
-### Custom Validation
-
-```typescript
-const StrongPasswordSchema = z.string().refine(
-    (password) => {
-        // Custom password strength check
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
-    },
-    { message: "Password must be strong" }
-);
-```
-
-## Best Practices
-
-1. **Validate Everything**
-
-    - Always validate inputs
-    - Include validation for all request parts
-    - Use type-safe schemas
-
-2. **Be Specific**
-
-    - Use precise validation rules
-    - Provide clear error messages
-    - Limit input to expected types and ranges
-
-3. **Performance Considerations**
-    - Keep validation rules simple
-    - Avoid overly complex validation logic
-    - Use built-in schema methods when possible
-
-## Troubleshooting
-
-### Common Validation Errors
-
-- **Unexpected Type**: Ensure input matches schema
-- **Missing Required Fields**: Check schema requirements
-- **Complex Validation Failures**: Use `.refine()` for custom checks
-
-## Migration and Compatibility
-
-- Easy to migrate from existing validation approaches
-- Works with TypeScript for full type inference
-- Supports multiple validation libraries
-
-## Next Steps
-
-- [Learn about Routing](/guide/routing)
-- [Understand Adapters](/guide/adapters)
-- [OpenAPI Documentation](/guide/openapi)
-
-## Community and Support
-
-Found a validation edge case? Need help?
-
-- [Open a GitHub Issue](https://github.com/takodotid/switchblade/issues)
-- [Join our Discord Community](https://discord.gg/your-discord-link)

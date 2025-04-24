@@ -56,59 +56,30 @@ function createCustomAdapter(app: Switchblade) {
             const sbReq = convertToSBRequest(req);
             const sbRes = new SBResponse();
 
-            // Run middlewares
-            for (const middleware of middlewares) {
-                await middleware(sbReq, sbRes);
+            try {
+                // Run middlewares
+                for (const middleware of middlewares) {
+                    await middleware(sbReq, sbRes);
+                }
+
+                // Execute route handler
+                await handler(sbReq, sbRes);
+
+                // Convert response back to framework-specific response
+                // Switchblade always returns a Web Standard Response object
+                if (sbRes.response instanceof Response) {
+                    return sbRes.response;
+                }
+
+                return sbRes.end(); // Equivalent to new Response(null, { status: 204 });
+            } catch (error) {
+                for (const errorHandler of app.errorHandlers) {
+                    await errorHandler(error, sbReq, sbRes);
+                }
             }
-
-            // Execute route handler
-            await handler(sbReq, sbRes);
-
-            // Convert response back to framework-specific response
-            return convertFromSBResponse(sbRes);
         });
     }
 
     return customFrameworkApp;
 }
 ```
-
-## Adapter Lifecycle
-
-1. Switchblade creates route definitions
-2. Adapter translates routes to target framework
-3. Middlewares are applied
-4. Route handlers are executed
-5. Responses are converted and returned
-
-## Best Practices
-
-- Keep route logic framework-agnostic
-- Use Switchblade's request and response objects
-- Avoid framework-specific code in route handlers
-- Handle type conversions in the adapter
-
-## Limitations
-
-- Some framework-specific features may not be directly translatable
-- Performance overhead of abstraction
-- Complex middlewares might require custom handling
-
-## Troubleshooting
-
-### Common Issues
-
-- **Routing Conflicts**: Ensure no route path overlaps
-- **Middleware Compatibility**: Some middlewares may need adaptation
-- **Type Conversion**: Carefully handle request/response conversions
-
-## Future Roadmap
-
-- More framework adapters
-- Improved middleware compatibility
-- Performance optimizations
-
-## Community and Support
-
-- [GitHub Issues](https://github.com/takodotid/switchblade/issues)
-- [Discord Community](https://discord.gg/your-discord-link)

@@ -16,7 +16,6 @@ export type OpenAPIMetadata = {
     description?: string;
     tags?: string[];
     deprecated?: boolean;
-    operationId?: string;
     type?: string;
     externalDocs?: {
         description?: string;

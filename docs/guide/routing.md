@@ -36,6 +36,10 @@ app.delete("/users/:id", (req, res) => {
 
 Extract route parameters easily:
 
+::: warning
+The `path` for parameters follows the adapter that you are using. In this example, we are using the Hono adapter.
+:::
+
 ```typescript
 app.get("/users/:id", (req, res) => {
     const userId = req.params.id;
@@ -93,71 +97,38 @@ app.all("/health", (req, res) => {
 });
 ```
 
-## Middleware in Routes
+## Middleware & Advanced Routing
 
-Add middleware to specific routes or route groups:
+Add middleware to specific routes or route groups. The middleware will affect the bottom route in the chain:
 
 ```typescript
-app.get(
-    "/protected",
-    (req, res, next) => {
-        // Authentication middleware
+const app = new Switchblade()
+    .use((req, res) => {
         if (!req.headers.authorization) {
-            return res.json(401, { error: "Unauthorized" });
+            // Throw an error to stop the request,
+            // use `app.onError` to handle it
+            throw new Error("Unauthorized");
         }
-        next();
-    },
-    (req, res) => {
-        return res.json(200, { secret: "data" });
-    }
-);
+
+        // No need for `next()` in here,
+        // if no error is thrown, the request will continue
+    })
+    .get("/protected", (req, res) => {
+        return res.json(200, { message: "Protected route" });
+    })
+    .group("/admin", (group) => {
+        return group
+            .use((req, res) => {
+                // Middleware for all admin routes
+                // This will not affect the previous route
+            })
+            .get("/dashboard", (req, res) => {
+                return res.json(200, { message: "Admin dashboard" });
+            });
+    })
+    // This route will not be affected by the middleware in the admin group
+    .post("/login", (req, res) => {
+        const { username, password } = req.body;
+        return res.json(200, { message: "Logged in" });
+    });
 ```
-
-## Advanced Routing with Validation
-
-Combine routing with comprehensive validation:
-
-```typescript
-app.post(
-    "/users",
-    (req, res) => {
-        const { name, email } = req.body;
-        return res.json(201, { id: 1, name, email });
-    },
-    {
-        body: {
-            name: z.string().min(2, "Name too short"),
-            email: z.string().email("Invalid email"),
-        },
-        responses: {
-            201: {
-                "application/json": z.object({
-                    id: z.number(),
-                    name: z.string(),
-                    email: z.string().email(),
-                }),
-            },
-        },
-    }
-);
-```
-
-## Best Practices
-
-- Keep routes focused and single-purpose
-- Use validation to ensure data integrity
-- Leverage middleware for cross-cutting concerns
-- Use route grouping for logical organization
-
-## Common Pitfalls
-
-- Avoid duplicating route definitions
-- Be consistent with your error handling
-- Use proper status codes
-- Validate and sanitize all inputs
-
-## Next Steps
-
-- [Learn about Validation](/guide/validation)
-- [Understand Adapters](/guide/adapters)
-- [OpenAPI Documentation](/guide/openapi)

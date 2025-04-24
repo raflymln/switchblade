@@ -2,30 +2,32 @@
 
 ## Prerequisites
 
-Before installing Switchblade, ensure you have:
-
-- Node.js (v18+ recommended)
-- npm or pnpm
+- Node.js 18+
+- npm, pnpm, or yarn
 - TypeScript (recommended)
 
 ## Installation
 
-You can install Switchblade using your preferred package manager:
+You can choose to install Switchblade with your preferred validation library:
 
 ::: code-group
 
-```bash [npm]
-npm install @takodotid/switchblade zod @sinclair/typebox
+```bash [Zod]
+npm install @takodotid/switchblade zod
 ```
 
-```bash [pnpm]
-pnpm add @takodotid/switchblade zod @sinclair/typebox
+```bash [TypeBox]
+npm install @takodotid/switchblade @sinclair/typebox
 ```
 
-```bash [yarn]
-yarn add @takodotid/switchblade zod @sinclair/typebox
+```bash [Optional: Hono Adapter]
+npm install hono @hono/node-server
 ```
 
+:::
+
+::: tip Choose Your Validation Library
+Switchblade supports multiple validation libraries. You only need to install the one you plan to use.
 :::
 
 ## Project Setup
@@ -33,20 +35,18 @@ yarn add @takodotid/switchblade zod @sinclair/typebox
 ### 1. Create a New Project
 
 ```bash
-mkdir my-switchblade-app
-cd my-switchblade-app
+mkdir switchblade-app
+cd switchblade-app
 npm init -y
 ```
 
 ### 2. Install Dependencies
 
-```bash
-npm install @takodotid/switchblade zod @sinclair/typebox @hono/node-server
-```
+See [Installation](#installation) for the required dependencies.
 
 ### 3. TypeScript Configuration
 
-Create a `tsconfig.json` in your project root:
+Create a `tsconfig.json`:
 
 ```json
 {
@@ -54,16 +54,14 @@ Create a `tsconfig.json` in your project root:
         "target": "ESNext",
         "module": "ESNext",
         "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true
+        "esModuleInterop": true
     }
 }
 ```
 
 ### 4. First Switchblade App
 
-Create an `index.ts` file:
+Create an `index.ts`:
 
 ```typescript
 import { Switchblade } from "@takodotid/switchblade";
@@ -71,20 +69,21 @@ import { createHonoAdapter } from "@takodotid/switchblade/adapters/hono";
 import { serve } from "@hono/node-server";
 import { z } from "zod";
 
-// Create Switchblade app
 const app = new Switchblade();
 
-// Define a route
 app.get("/", (req, res) => {
     return res.json(200, { message: "Hello, Switchblade!" });
 });
 
-// Create Hono adapter and start server
 const hono = createHonoAdapter(app);
-serve({ fetch: hono.fetch, port: 3000 }, () => console.log("Server running on http://localhost:3000"));
+serve({ fetch: hono.fetch, port: 3000 });
 ```
 
 ### 5. Add Scripts to `package.json`
+
+::: tip Run Typescript using `tsx` library
+To get started quickly, we recommend using the `tsx` library to run TypeScript files directly. With it, you can run TypeScript files without needing to compile them first.
+:::
 
 ```json
 {
@@ -97,37 +96,6 @@ serve({ fetch: hono.fetch, port: 3000 }, () => console.log("Server running on ht
 
 ## Running the Application
 
-::: code-group
-
-```bash [npm]
+```bash
 npm start
 ```
-
-```bash [pnpm]
-pnpm start
-```
-
-```bash [yarn]
-yarn start
-```
-
-:::
-
-## Next Steps
-
-- [Learn about Routing](/guide/routing)
-- [Explore Validation](/guide/validation)
-- [Understand Adapters](/guide/adapters)
-
-## Troubleshooting
-
-### Common Issues
-
-- **Validation Errors**: Ensure you've imported the correct validation library
-- **Adapter Problems**: Check that you've installed the correct adapter
-- **TypeScript Errors**: Verify your `tsconfig.json` settings
-
-## Community Support
-
-- [GitHub Issues](https://github.com/takodotid/switchblade/issues)
-- [Discord Community](https://discord.gg/your-discord-link)
