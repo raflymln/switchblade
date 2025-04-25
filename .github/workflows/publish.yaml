@@ -1,0 +1,47 @@
+name: Publish to npm/GitHub Package registry
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - registry: https://registry.npmjs.org/
+            secretKey: NPM_TOKEN
+          - registry: https://npm.pkg.github.com/
+            secretKey: GITHUB_TOKEN
+    steps:
+        - name: Checkout repository
+          uses: actions/checkout@v4.2.2
+
+        - name: Setup pnpm
+          uses: pnpm/action-setup@v4.1.0
+
+        - name: Setup Node.js
+          uses: actions/setup-node@v4.4.0
+          with:
+            node-version-file: .node-version
+            registry-url: ${{ matrix.registry }}
+            cache: pnpm
+
+        - name: Install dependencies
+          run: pnpm install --frozen-lockfile
+
+        - name: Lint
+          run: pnpm lint
+
+        - name: Build
+          run: pnpm build
+
+        - name: Publish to npm
+          run: pnpm publish --access public --no-git-checks
+          env:
+            NODE_AUTH_TOKEN: ${{ secrets[matrix.secretKey] }}
