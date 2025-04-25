@@ -8,7 +8,7 @@ import { createSchema } from "zod-openapi";
 /**
  * OpenAPI metadata for the route.
  * This then will be formatted to OpenAPI spec.
- * @see https://swagger.io/specification/
+ * @see https://swagger.io/specification
  */
 export type OpenAPIMetadata = {
     hide?: boolean;
@@ -24,11 +24,11 @@ export type OpenAPIMetadata = {
 };
 
 /**
- * Converts a Zod or TypeBox schema to an OpenAPI schema
+ * Converts a Zod or TypeBox schema to an OpenAPI V3.1 schema
+ *
  * @param schema Zod or TypeBox schema
- * @returns OpenAPI schema
  */
-export function convertSchemaToOpenAPISchema(schema: AnyValidationSchema): OpenAPIV3_1.SchemaObject {
+export function convertValidationSchemaToOpenAPI3_1Schema(schema: AnyValidationSchema): OpenAPIV3_1.SchemaObject {
     // Handle Zod schemas
     if (schema instanceof ZodSchema) {
         return createSchema(schema).schema as OpenAPIV3_1.SchemaObject;

@@ -1,138 +1,218 @@
-import type { AnyValidationSchema, CookieOptions, InferValidationSchema } from "..";
+import type { AnyValidationSchema, InferValidationSchema } from "..";
+import type { SerializeOptions } from "cookie";
 
 import { validate } from "..";
 
-type GetContentTypes<Responses extends DefaultResponsesType, StatusCode extends keyof Responses> = Responses[StatusCode] extends { content: infer C } ? C : never;
-type GetContentTypeForType<Responses extends DefaultResponsesType, StatusCode extends keyof Responses, ContentType extends string> = Responses[StatusCode] extends {
+import cookie from "cookie";
+
+type GetSchema<Responses extends SBResponseSchema, StatusCode extends keyof Responses> = Responses[StatusCode] extends {
+    content: infer C;
+}
+    ? C
+    : never;
+
+type GetSchemaForType<Responses extends SBResponseSchema, StatusCode extends keyof Responses, ContentType extends string> = Responses[StatusCode] extends {
     content: { [K in ContentType]: infer T };
 }
     ? T
     : unknown;
 
-/**
- * Default response type for the response object.
- * It's used for the response object.
- * The mapping is [status code] => configuration object.
- */
-export type DefaultResponsesType = Record<
+export type SBResponseSchema = Record<
     number,
     {
         description?: string;
-        summary?: string;
-        content: Record<string, unknown>;
-        headers?: Record<string, unknown>;
-    }
->;
-
-/**
- * Validation schema for the response object.
- * It's used for the response object.
- * The mapping is [status code] => configuration object.
- */
-export type ResponseSchema = Record<
-    number,
-    {
         content: Record<string, AnyValidationSchema>;
         headers?: Record<string, AnyValidationSchema>;
     }
 >;
 
-export class SBResponse<Responses extends DefaultResponsesType = DefaultResponsesType> {
-    constructor(public validationSchema?: ResponseSchema) {}
+export class SBResponse<Responses extends SBResponseSchema = SBResponseSchema> {
+    constructor(
+        /**
+         * The validation schema used in the request
+         */
+        public validationSchema?: SBResponseSchema
+    ) {}
 
+    /**
+     * The current status code to return to client
+     */
     statusCode: number = 200;
+
+    /**
+     * The current headers to return to client
+     */
     headers: Headers = new Headers();
+
+    /**
+     * The current response object
+     */
     response: Response | null = null;
 
-    status(code: number) {
+    /**
+     * The current cookie list to be set on client
+     */
+    get cookies(): Record<string, string | undefined> {
+        return cookie.parse(this.headers.get("Set-Cookie") || "");
+    }
+
+    /**
+     * Set status code of the response
+     *
+     * @param code Status code
+     */
+    status(code: number): this {
         this.statusCode = code;
         return this;
     }
 
-    setHeader(key: string, value: string) {
+    /**
+     * Set a header to the response
+     *
+     * @param key Header name
+     * @param value Header value
+     */
+    setHeader(key: string, value: string): this {
         this.headers.set(key, value);
         return this;
     }
 
-    setCookie(name: string, value: string, options?: CookieOptions) {
-        const cookieOptions: string[] = [];
-
-        if (options) {
-            if (options.path) cookieOptions.push(`Path=${options.path}`);
-            if (options.domain) cookieOptions.push(`Domain=${options.domain}`);
-            if (options.expires) cookieOptions.push(`Expires=${options.expires.toUTCString()}`);
-            if (options.maxAge) cookieOptions.push(`Max-Age=${options.maxAge}`);
-            if (options.secure) cookieOptions.push("Secure");
-            if (options.httpOnly) cookieOptions.push("HttpOnly");
-            if (options.sameSite) cookieOptions.push(`SameSite=${options.sameSite === true ? "Lax" : options.sameSite}`);
-            if (options.signed) cookieOptions.push("Signed");
-        }
-
-        this.headers.append("Set-Cookie", `${name}=${value}; ${cookieOptions.join("; ")}`);
+    /**
+     * Set a cookie to the response
+     *
+     * @param name Cookie Name
+     * @param value Cookie Value
+     * @param options Cookie Options
+     */
+    setCookie(name: string, value: string, options?: SerializeOptions): this {
+        this.headers.append("Set-Cookie", cookie.serialize(name, value, options));
         return this;
     }
 
-    removeCookie(name: string, options?: CookieOptions) {
-        const cookieOptions: string[] = [];
+    /**
+     * Delete a cookie on client, it doesn't remove the cookie set
+     * from `setCookie` method, it just sets the cookie to expire on client
+     *
+     * @param name Cookie Name
+     * @param options Cookie Options to match
+     */
+    removeCookie(name: string, options?: Pick<SerializeOptions, "path" | "secure" | "domain">): this {
+        this.headers.append(
+            "Set-Cookie",
+            cookie.serialize(name, "", {
+                expires: new Date(0),
+                ...options,
+            })
+        );
 
-        if (options) {
-            if (options.path) cookieOptions.push(`Path=${options.path}`);
-            if (options.domain) cookieOptions.push(`Domain=${options.domain}`);
-            if (options.expires) cookieOptions.push(`Expires=${options.expires.toUTCString()}`);
-            if (options.maxAge) cookieOptions.push(`Max-Age=${options.maxAge}`);
-            if (options.secure) cookieOptions.push("Secure");
-            if (options.httpOnly) cookieOptions.push("HttpOnly");
-            if (options.sameSite) cookieOptions.push(`SameSite=${options.sameSite === true ? "Lax" : options.sameSite}`);
-        }
-
-        this.headers.append("Set-Cookie", `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; ${cookieOptions.join("; ")}`);
         return this;
     }
 
-    redirect(statusCode: number = 302, url: string) {
-        this.status(statusCode).setHeader("Location", url);
+    /**
+     * Send a raw response to the client (it's actually just a simple new Response function)
+     * This is not typed, use this for low-level response
+     *
+     * @param body Body Init
+     * @param init Response Init
+     */
+    createResponse(body?: RequestInit["body"], init?: ResponseInit): Response {
+        if (this.response) {
+            throw new Error("Response already created");
+        }
 
-        this.response = new Response(null, {
+        this.response = new Response(body, {
             status: this.statusCode,
             headers: this.headers,
+            ...init,
         });
 
         return this.response;
     }
 
-    end(): Response {
-        return new Response(null, {
-            status: this.statusCode,
-            headers: this.headers,
-        });
+    /**
+     * Redirect the client to a new URL
+     *
+     * @param statusCode Status code
+     * @param url URL to redirect to
+     */
+    redirect(statusCode: number = 302, url: string): Response {
+        return this.status(statusCode).setHeader("Location", url).createResponse();
     }
 
-    send<StatusCode extends keyof Responses, ContentType extends keyof GetContentTypes<Responses, StatusCode>>(
+    /**
+     * End the response without any body
+     */
+    end(): Response {
+        return this.createResponse();
+    }
+
+    /**
+     * Send a typed response to the client, this will follow the validation schema provided
+     *
+     * @param code Status code
+     * @param contentType Content type
+     * @param data Typed response data
+     */
+    send<StatusCode extends keyof Responses, ContentType extends keyof GetSchema<Responses, StatusCode>>(
         code: StatusCode,
         contentType: ContentType,
-        data: InferValidationSchema<GetContentTypes<Responses, StatusCode>[ContentType]>
-    ) {
-        if (typeof code === "number") this.status(code);
-        if (typeof contentType === "string") this.setHeader("Content-Type", contentType);
-
-        if (this.validationSchema && code in this.validationSchema && contentType in this.validationSchema[code as number]) {
-            const schema = this.validationSchema[code as number][contentType as keyof ResponseSchema[keyof ResponseSchema]];
-            if (schema) validate(schema, data);
+        data: InferValidationSchema<GetSchema<Responses, StatusCode>[ContentType]>
+    ): Response {
+        if (typeof code !== "number") {
+            throw new Error("Status code must be a number");
         }
 
-        this.response = new Response(JSON.stringify(data), {
-            status: this.statusCode,
-            headers: this.headers,
-        });
+        if (typeof contentType !== "string") {
+            throw new Error("Content type must be a string");
+        }
 
-        return this.response;
+        if (this.validationSchema?.[code]) {
+            const contentSchema = this.validationSchema[code].content[contentType];
+
+            if (contentSchema) {
+                validate(contentSchema, data);
+            }
+
+            const headersSchema = this.validationSchema[code].headers;
+
+            if (headersSchema) {
+                for (const [key, schema] of Object.entries(headersSchema)) {
+                    const headerValue = this.headers.get(key);
+                    this.setHeader(key, validate(schema, headerValue));
+                }
+            }
+        }
+
+        return this.status(code).setHeader("Content-Type", contentType).createResponse(JSON.stringify(data));
     }
 
-    json<StatusCode extends keyof Responses>(code: StatusCode, data: InferValidationSchema<GetContentTypeForType<Responses, StatusCode, "application/json">>) {
+    /**
+     * Send a JSON response to the client, the content type will be set to "application/json"
+     *
+     * @param code Status code
+     * @param data Response data following "application/json" schema
+     */
+    json<StatusCode extends keyof Responses>(code: StatusCode, data: InferValidationSchema<GetSchemaForType<Responses, StatusCode, "application/json">>): Response {
         return this.send(code, "application/json" as never, data as never);
     }
 
-    text<StatusCode extends keyof Responses>(code: StatusCode, data: InferValidationSchema<GetContentTypeForType<Responses, StatusCode, "text/plain">>) {
+    /**
+     * Send a text response to the client, the content type will be set to "text/plain"
+     *
+     * @param code Status code
+     * @param data Response data following "text/plain" schema
+     */
+    text<StatusCode extends keyof Responses>(code: StatusCode, data: InferValidationSchema<GetSchemaForType<Responses, StatusCode, "text/plain">>): Response {
         return this.send(code, "text/plain" as never, data as never);
+    }
+
+    /**
+     * Send a HTML response to the client, the content type will be set to "text/html"
+     *
+     * @param code Status code
+     * @param data Response data following "text/html" schema
+     */
+    html<StatusCode extends keyof Responses>(code: StatusCode, data: InferValidationSchema<GetSchemaForType<Responses, StatusCode, "text/html">>): Response {
+        return this.send(code, "text/html" as never, data as never);
     }
 }

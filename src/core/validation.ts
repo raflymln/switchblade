@@ -21,7 +21,7 @@ export type InferValidationSchema<T> = T extends TSchema ? Static<T> : T extends
  */
 export type InferValidationSchemaInRecord<T> = T extends object
     ? {
-          [K in keyof T]: T[K] extends TSchema ? Static<T[K]> : T[K] extends z.ZodType<infer U> ? U : T[K];
+          [K in keyof T]: InferValidationSchema<T[K]>;
       }
     : never;
 
