@@ -1,5 +1,5 @@
+import { Switchblade } from "../src";
 import { createHonoAdapter } from "../src/adapters/hono";
-import { Switchblade } from "../src/core/app";
 
 import { serve } from "@hono/node-server";
 import { Scalar } from "@scalar/hono-api-reference";
@@ -41,6 +41,7 @@ app.group("/users", (group) => {
         .get(
             "/",
             (req, res) => {
+                req.params;
                 return res.json(200, {
                     users: [
                         { id: 1, name: "John Doe" },

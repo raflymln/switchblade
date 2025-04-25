@@ -1,10 +1,10 @@
-import type { DefaultRequestType, RequestSchema, SBRequest, DefaultResponsesType, ResponseSchema, SBResponse, OpenAPIMetadata } from "@/index";
+import type { DefaultRequestType, RequestSchema, SBRequest, DefaultResponsesType, ResponseSchema, SBResponse, OpenAPIMetadata } from "..";
 import type { OpenAPIV3_1 } from "openapi-types";
+
+import { convertSchemaToOpenAPISchema } from "..";
 
 import { z } from "zod";
 import { extendZodWithOpenApi } from "zod-openapi";
-
-import { convertSchemaToOpenAPISchema } from "@/index";
 
 extendZodWithOpenApi(z);
 

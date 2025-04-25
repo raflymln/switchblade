@@ -1,6 +1,6 @@
-import type { AnyValidationSchema, InferValidationSchemaInRecord } from "@/index";
+import type { AnyValidationSchema, InferValidationSchemaInRecord } from "..";
 
-import { validate } from "@/index";
+import { validate } from "..";
 
 /**
  * Default request type for the request object.

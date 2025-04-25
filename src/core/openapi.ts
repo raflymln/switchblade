@@ -1,4 +1,4 @@
-import type { AnyValidationSchema } from "@/index";
+import type { AnyValidationSchema } from "..";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 import { TypeGuard } from "@sinclair/typebox";

@@ -1,6 +1,6 @@
-import type { AnyValidationSchema, CookieOptions, InferValidationSchema } from "@/index";
+import type { AnyValidationSchema, CookieOptions, InferValidationSchema } from "..";
 
-import { validate } from "@/index";
+import { validate } from "..";
 
 type GetContentTypes<Responses extends DefaultResponsesType, StatusCode extends keyof Responses> = Responses[StatusCode] extends { content: infer C } ? C : never;
 type GetContentTypeForType<Responses extends DefaultResponsesType, StatusCode extends keyof Responses, ContentType extends string> = Responses[StatusCode] extends {

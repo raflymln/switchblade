@@ -1,9 +1,8 @@
-import type { Switchblade } from "@/core/app";
+import type { Switchblade } from "..";
+
+import { SBRequest, SBResponse } from "..";
 
 import { Hono } from "hono";
-
-import { SBRequest } from "@/core/request";
-import { SBResponse } from "@/core/response";
 
 export function createHonoAdapter(app: Switchblade, honoApp: Hono = new Hono()) {
     for (const route of app.routes) {
