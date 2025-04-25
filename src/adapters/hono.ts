@@ -4,17 +4,10 @@ import { Hono } from "hono";
 
 export function createHonoAdapter(app: Switchblade, honoApp: Hono = new Hono()) {
     for (const route of app.routes) {
-        const { method, path, run } = route;
-        const fullPath = `${app.config?.basePath || ""}${path}`;
+        const fullPath = `${app.config?.basePath || ""}${route.path}`;
 
-        honoApp.on(method, fullPath, async (c) => {
-            const res = await run(c.req.raw, c.req.param());
-
-            if (res instanceof Response) {
-                return res;
-            }
-
-            return c.notFound();
+        honoApp.on(route.method, fullPath, async (c) => {
+            return await route.run(c.req.raw, c.req.param());
         });
     }
 

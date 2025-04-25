@@ -21,17 +21,18 @@ export type SwitchbladeConfig = {
  * This is the object that is returned when a route is registered.
  */
 export type RegisteredRoute = {
-    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | (string & NonNullable<unknown>);
     path: string;
     handler: RouteHandler;
-    middlewares: RouteHandler[];
+    middlewares: Middleware[];
     errorHandlers: ErrorHandler[];
     validation?: RouteValidationOptions;
     openapi?: OpenAPIMetadata;
-    run: (request: Request, params: Record<string, string>) => Promise<void | Response>;
+    run: (request: Request, params: Record<string, string>) => Promise<Response>;
 };
 
-export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => void | Promise<void> | Response | Promise<Response>;
+export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => void | Response | Promise<void | Response>;
+export type Middleware = (req: SBRequest, res: SBResponse, next: () => Promise<void | Response>) => void | Response | Promise<void | Response>;
 
 /**
  * Route handler type for both middleware and route handler.
@@ -43,7 +44,7 @@ export type RouteHandler<
     Headers extends SBRequestParamSchema = SBRequestParamSchema,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
-> = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => void | Promise<void> | Response | Promise<Response>;
+> = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => void | Response | Promise<void | Response>;
 
 /**
  * Validation options for the route.
@@ -111,13 +112,34 @@ export class Switchblade {
     /**
      * List of registered middlewares on Switchblade
      */
-    middlewares: RouteHandler[] = [];
+    middlewares: Middleware[] = [];
+
+    /**
+     * Get the registered route by method and path
+     * This is useful for testing
+     *
+     * @param method Route Method
+     * @param path Route Registered Path
+     *
+     * @example
+     * ```ts
+     * describe('Example', () => {
+     *     test('Get Specific User', async () => {
+     *         const res = await app.getRoute("GET", "/user/:id").run(new Request(), { id: crypto.randomUUID() })
+     *         expect(res.status).toBe(200)
+     *     })
+     * })
+     * ```
+     */
+    getRoute(method: RegisteredRoute["method"], path: string) {
+        return this.routes.find((route) => route.method === method && route.path === path);
+    }
 
     /**
      * Generate OpenAPI 3.1 document based on routes and configurations
      *
      * @example
-     * ```
+     * ```ts
      * // Set route for OpenAPI document API
      * app.get("/openapi.json", (req, res) => res.json(200, app.getOpenAPI31Document()))
      *
@@ -230,7 +252,7 @@ export class Switchblade {
      *    .get("/users", handler) // Will be intercepted by the middleware
      * ```
      */
-    use(middleware: RouteHandler) {
+    use(middleware: Middleware) {
         this.middlewares.push(middleware);
         return this;
     }
@@ -242,7 +264,7 @@ export class Switchblade {
      * @param handler The error handler function
      *
      * @example
-     * ```
+     * ```ts
      * app
      *    .onError(errorHandler())
      *    // If an error is thrown in the middleware and the route handler, the previous
@@ -286,8 +308,6 @@ export class Switchblade {
                 cookies: options?.cookies,
             },
             async run(request, params) {
-                const runner = [...this.middlewares, handler];
-
                 const sbReq = new SBRequest(request, params as never, {
                     query: this.validation?.query,
                     params: this.validation?.params,
@@ -298,13 +318,57 @@ export class Switchblade {
                 const sbRes = new SBResponse(this.validation?.responses);
 
                 try {
-                    for (const fn of runner) {
-                        await fn(sbReq, sbRes);
+                    let middlewareIndex = 0;
+                    let response: Response | undefined;
 
-                        if (sbRes.response instanceof Response) {
-                            return sbRes.response;
+                    const run = async (): Promise<void | Response> => {
+                        // Store current index before calling middleware
+                        const currentIndex = middlewareIndex;
+
+                        // If we've gone through all middlewares, execute the handler
+                        if (currentIndex === this.middlewares.length) {
+                            response = (await this.handler(sbReq, sbRes)) || undefined;
+                            return response;
                         }
-                    }
+
+                        // Create a promise that will be resolved when next() is called
+                        let nextCalled = false;
+                        let resolveNext: (value: void | Response) => void;
+                        const nextPromise = new Promise<void | Response>((resolve) => {
+                            resolveNext = resolve;
+                        });
+
+                        // Define our next function to track when it's called
+                        const next = async () => {
+                            nextCalled = true;
+                            const nextResult = await run(); // Call next middleware
+                            resolveNext(nextResult);
+                            return nextResult;
+                        };
+
+                        // Increment index before calling middleware
+                        middlewareIndex++;
+
+                        // Call the middleware
+                        const middlewareResponse = await this.middlewares[currentIndex](sbReq, sbRes, next);
+
+                        // If middleware returned a response directly, use it
+                        if (middlewareResponse) {
+                            response = middlewareResponse;
+                            return middlewareResponse;
+                        }
+
+                        // If next() was called, wait for its completion and prioritize its result
+                        if (nextCalled) {
+                            const nextResult = await nextPromise;
+                            return nextResult; // Always return the deeper middleware/handler response
+                        }
+
+                        return response;
+                    };
+
+                    await run();
+                    return response || sbRes.end();
                 } catch (error) {
                     for (const errorHandler of this.errorHandlers) {
                         await errorHandler(error, sbReq, sbRes);
@@ -313,6 +377,10 @@ export class Switchblade {
                             return sbRes.response;
                         }
                     }
+
+                    // By default, if the error handler doesn't return a response,
+                    // send a 500 error with "Internal Server Error" message
+                    return sbRes.text(500, "Internal Server Error");
                 }
             },
         };
