@@ -131,7 +131,7 @@ export class Switchblade {
      * })
      * ```
      */
-    getRoute(method: RegisteredRoute["method"], path: string) {
+    getRoute(method: RegisteredRoute["method"], path: string): RegisteredRoute | undefined {
         return this.routes.find((route) => route.method === method && route.path === path);
     }
 
@@ -160,7 +160,7 @@ export class Switchblade {
         for (const route of this.routes) {
             if (route.openapi?.hide) continue; // Skip if route is hidden or openapi is not provided
 
-            const fullPath = `${this.config?.basePath || ""}${route.path}`;
+            const fullPath = `${this.config?.basePath || ""}${route.path}`.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => `{${paramName}}`);
             if (!document.paths![fullPath]) document.paths![fullPath] = {};
 
             const metadata: OpenAPIV3_1.OperationObject = {
@@ -198,6 +198,7 @@ export class Switchblade {
                     metadata.parameters!.push({
                         name: key,
                         in: inType,
+                        required: true,
                         schema: convertValidationSchemaToOpenAPI3_1Schema(schema) as never,
                     });
                 });
@@ -252,7 +253,7 @@ export class Switchblade {
      *    .get("/users", handler) // Will be intercepted by the middleware
      * ```
      */
-    use(middleware: Middleware) {
+    use(middleware: Middleware): this {
         this.middlewares.push(middleware);
         return this;
     }
@@ -273,7 +274,7 @@ export class Switchblade {
      *    .get("/users", handler)
      * ```
      */
-    onError(handler: ErrorHandler) {
+    onError(handler: ErrorHandler): this {
         this.errorHandlers.push(handler);
         return this;
     }
@@ -287,10 +288,13 @@ export class Switchblade {
      * @param handler The route handler
      * @param options The route options
      */
-    private define(method: RegisteredRoute["method"], path: string, handler: RouteHandler, options?: RouteOptions) {
+    private define(method: RegisteredRoute["method"], path: string, handler: RouteHandler, options?: RouteOptions): this {
         if (this.routes.find((route) => route.method === method && route.path === path)) {
             throw new Error(`Route ${method} ${path} already exists.`);
         }
+
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const app = this;
 
         const route: RegisteredRoute = {
             method,
@@ -308,7 +312,7 @@ export class Switchblade {
                 cookies: options?.cookies,
             },
             async run(request, params = {}) {
-                const sbReq = new SBRequest(request, params as never, {
+                const sbReq = new SBRequest(app, request, params as never, {
                     query: this.validation?.query,
                     params: this.validation?.params,
                     headers: this.validation?.headers,
@@ -346,7 +350,7 @@ export class Switchblade {
 
                     // By default, if the error handler doesn't return a response,
                     // send a 500 error with "Internal Server Error" message
-                    return sbRes.text(500, "Internal Server Error");
+                    return sbRes.status(500).text("Internal Server Error");
                 }
             },
         };
@@ -386,8 +390,8 @@ export class Switchblade {
      * });
      * ```
      */
-    group(path: string, cb: (app: Switchblade) => Switchblade) {
-        const subApp = cb(new Switchblade({ ...this.config, basePath: path }));
+    group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade)): this {
+        const subApp = cb instanceof Switchblade ? cb : new Switchblade(this.config);
 
         for (const route of subApp.routes) {
             this.routes.push({

@@ -1,10 +1,8 @@
-import type { AnyValidationSchema, InferValidationSchema, InferValidationSchemaInRecord } from "..";
+import type { AnyValidationSchema, InferValidationSchema, InferValidationSchemaInRecord, Switchblade } from "..";
 
 import { validate } from "..";
 
 import cookie from "cookie";
-
-type GetBodySchemaForType<Body extends SBRequestBodySchema, ContentType extends keyof Body["content"]> = ContentType extends keyof Body["content"] ? Body["content"][ContentType] : never;
 
 export type SBRequestParamSchema = Record<string, AnyValidationSchema>;
 export type SBRequestBodySchema = {
@@ -22,6 +20,10 @@ export class SBRequest<
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
 > {
     constructor(
+        /**
+         * The main app instance
+         */
+        public app: Switchblade,
         /**
          * The original Request object
          */
@@ -47,7 +49,7 @@ export class SBRequest<
         // -----------------------
         if (this.validationSchema?.params) {
             Object.entries(this.validationSchema.params).forEach(([key, schema]) => {
-                params[key] = validate(schema, this.params[key]);
+                params[key] = validate(schema, params[key]);
             });
         }
 
@@ -184,7 +186,7 @@ export class SBRequest<
      *
      * @example const { email, name } = await req.json();
      */
-    async json<ContentType extends keyof Body["content"] = "application/json">(): Promise<InferValidationSchema<GetBodySchemaForType<Body, ContentType>>> {
+    async json<ContentType extends keyof Body["content"] = "application/json">(): Promise<InferValidationSchema<Body["content"][ContentType]>> {
         const request = this.raw.clone();
         let data: Record<string, unknown>;
 
@@ -228,11 +230,7 @@ export class SBRequest<
         }
 
         if (this.validationSchema?.body) {
-            for (const [key, schema] of Object.entries(this.validationSchema.body.content[this.contentType])) {
-                if (schema) {
-                    data[key] = validate(schema, data[key]);
-                }
-            }
+            validate(this.validationSchema.body.content[this.contentType], data);
         }
 
         return data as never;
