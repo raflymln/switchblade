@@ -179,7 +179,10 @@ export class SBResponse<Responses extends SBResponseSchema = SBResponseSchema> {
             }
         }
 
-        return this.status(code).setHeader("Content-Type", contentType).createResponse(JSON.stringify(data));
+        // Prevent string being stringified twice, resulting in the string being escaped
+        const parsedData = typeof data === "string" ? data : JSON.stringify(data);
+
+        return this.status(code).setHeader("Content-Type", contentType).createResponse(parsedData);
     }
 
     /**
