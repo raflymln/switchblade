@@ -174,7 +174,7 @@ export class SBResponse<
             const contentSchema = this.validationSchema[this.statusCode].content[this.contentType];
 
             if (contentSchema) {
-                validate(contentSchema, data);
+                validate(contentSchema, data, ["SBResponse.body"]);
             }
 
             const headersSchema = this.validationSchema[this.statusCode].headers;
@@ -182,7 +182,7 @@ export class SBResponse<
             if (headersSchema) {
                 for (const [key, schema] of Object.entries(headersSchema)) {
                     const headerValue = this.headers.get(key);
-                    this.setHeader(key, validate(schema, headerValue));
+                    this.setHeader(key, validate(schema, headerValue, [`SBResponse.headers.${key}`]));
                 }
             }
         }

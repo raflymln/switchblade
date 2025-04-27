@@ -198,7 +198,7 @@ export class Switchblade {
                     metadata.parameters!.push({
                         name: key,
                         in: inType,
-                        required: true,
+                        required: inType === "path",
                         schema: convertValidationSchemaToOpenAPI3_1Schema(schema) as never,
                     });
                 });
@@ -317,15 +317,21 @@ export class Switchblade {
                     params: this.validation?.params,
                     headers: this.validation?.headers,
                     body: this.validation?.body,
+                    cookies: this.validation?.cookies,
                 });
 
                 const sbRes = new SBResponse(this.validation?.responses);
 
                 try {
+                    // Cache & validate the request params
+                    sbReq.params;
+                    sbReq.headers;
+                    sbReq.query;
+                    sbReq.cookies;
+
+                    // Run the middlewares in order
                     let middlewareIndex = 0;
 
-                    // In this runner function we don't use return, it's because sometimes in the middleware,
-                    // user doesn't return the next() function, instead it just calls the function.
                     const run = async () => {
                         // If we've gone through all middlewares, execute the handler
                         if (middlewareIndex === this.middlewares.length) {

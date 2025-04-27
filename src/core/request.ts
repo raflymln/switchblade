@@ -19,6 +19,18 @@ export class SBRequest<
     Headers extends SBRequestParamSchema = SBRequestParamSchema,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
 > {
+    private cacheMap: Map<string, unknown> = new Map();
+    private cached(fn: () => unknown, key: string): unknown {
+        if (this.cacheMap.has(key)) {
+            return this.cacheMap.get(key);
+        }
+
+        const value = fn();
+        this.cacheMap.set(key, value);
+
+        return value;
+    }
+
     constructor(
         /**
          * The main app instance
@@ -29,10 +41,9 @@ export class SBRequest<
          */
         public raw: Request,
         /**
-         * The request parameters, if the validation schema is provided, it will validate the params against the schema
-         * @example req.params["id"]
+         * The original (unvalidated) request parameters
          */
-        params: Record<string, unknown> = {},
+        private _params: Record<string, unknown> = {},
         /**
          * The validation schema used in the request
          */
@@ -43,71 +54,7 @@ export class SBRequest<
             body?: SBRequestBodySchema;
             cookies?: SBRequestParamSchema;
         }
-    ) {
-        // -----------------------
-        // Parse Params
-        // -----------------------
-        if (this.validationSchema?.params) {
-            Object.entries(this.validationSchema.params).forEach(([key, schema]) => {
-                params[key] = validate(schema, params[key]);
-            });
-        }
-
-        this.params = params as never;
-
-        // -----------------------
-        // Parse Headers
-        // -----------------------
-        const headers = Object.fromEntries(this.raw.headers.entries());
-
-        if (this.validationSchema?.headers) {
-            Object.entries(this.validationSchema.headers).forEach(([key, schema]) => {
-                headers[key] = validate(schema, headers[key]);
-            });
-        }
-
-        this.headers = headers as never;
-
-        // -----------------------
-        // Parse cookies
-        // -----------------------
-        const cookies = cookie.parse(this.raw.headers.get("Cookie") || "");
-
-        if (this.validationSchema?.cookies) {
-            Object.entries(this.validationSchema.cookies).forEach(([key, schema]) => {
-                cookies[key] = validate(schema, cookies[key]);
-            });
-        }
-
-        this.cookies = cookies as never;
-
-        // -----------------------
-        // Parse query
-        // -----------------------
-        const query: Record<string, string | string[]> = {}; // Multiple same query parameters will be parsed as an array
-
-        new URL(this.raw.url).searchParams.forEach((value, key) => {
-            // Handle arrays (keys that appear multiple times)
-            if (query[key]) {
-                if (Array.isArray(query[key])) {
-                    query[key].push(value);
-                } else {
-                    query[key] = [query[key], value];
-                }
-            } else {
-                query[key] = value;
-            }
-
-            // Validate query parameters
-            const schema = this.validationSchema?.query?.[key];
-
-            if (schema) {
-                query[key] = validate(schema, query[key]);
-            }
-        });
-
-        this.query = query as never;
-    }
+    ) {}
 
     /**
      * Get the current running request state, this will be passed from the first middleware until the route handler itself
@@ -126,25 +73,85 @@ export class SBRequest<
      * The request parameters
      * @example req.params["id"]
      */
-    params: InferValidationSchemaInRecord<Params>;
+    get params(): InferValidationSchemaInRecord<Params> {
+        return this.cached(() => {
+            if (this.validationSchema?.params) {
+                Object.entries(this.validationSchema.params).forEach(([key, schema]) => {
+                    this._params[key] = validate(schema, this._params[key], [`SBRequest.params.${key}`]);
+                });
+            }
+
+            return this._params;
+        }, "params") as never;
+    }
 
     /**
      * Get the request headers
      * @example req.headers["Content-Type"]
      */
-    headers: InferValidationSchemaInRecord<Headers>;
+    get headers(): InferValidationSchemaInRecord<Headers> {
+        return this.cached(() => {
+            const headers = Object.fromEntries(this.raw.headers.entries());
+
+            if (this.validationSchema?.headers) {
+                Object.entries(this.validationSchema.headers).forEach(([key, schema]) => {
+                    headers[key] = validate(schema, headers[key], [`SBRequest.headers.${key}`]);
+                });
+            }
+
+            return headers;
+        }, "headers") as never;
+    }
 
     /**
-     * Get the request cookies, if the validation schema is provided, it will validate the cookies against the schema
+     * Get the request cookies
      * @example req.cookies["sessionId"]
      */
-    cookies: InferValidationSchemaInRecord<Cookies>;
+    get cookies(): InferValidationSchemaInRecord<Cookies> {
+        return this.cached(() => {
+            const cookies = cookie.parse(this.raw.headers.get("Cookie") || "");
+
+            if (this.validationSchema?.cookies) {
+                Object.entries(this.validationSchema.cookies).forEach(([key, schema]) => {
+                    cookies[key] = validate(schema, cookies[key], [`SBRequest.cookies.${key}`]);
+                });
+            }
+
+            return cookies;
+        }, "cookies") as never;
+    }
 
     /**
-     * Get the request URL parameters, if the validation schema is provided, it will validate the params against the schema
+     * Get the request URL parameters
      * @example req.params["id"]
      */
-    query: InferValidationSchemaInRecord<Query>;
+    get query(): InferValidationSchemaInRecord<Query> {
+        return this.cached(() => {
+            const query: Record<string, string | string[]> = {};
+
+            new URL(this.raw.url).searchParams.forEach((value, key) => {
+                // Handle arrays (keys that appear multiple times)
+                if (query[key]) {
+                    if (Array.isArray(query[key])) {
+                        query[key].push(value);
+                    } else {
+                        query[key] = [query[key], value];
+                    }
+                } else {
+                    query[key] = value;
+                }
+            });
+
+            // Multiple same query parameters will be parsed as an array
+            if (this.validationSchema?.query) {
+                Object.entries(this.validationSchema.query).forEach(([key, schema]) => {
+                    query[key] = validate(schema, query[key], [`SBRequest.query.${key}`]);
+                });
+            }
+
+            return query;
+        }, "query") as never;
+    }
 
     /**
      * Get current request method
@@ -230,7 +237,7 @@ export class SBRequest<
         }
 
         if (this.validationSchema?.body) {
-            validate(this.validationSchema.body.content[this.contentType], data);
+            validate(this.validationSchema.body.content[this.contentType], data, ["SBRequest.body"]);
         }
 
         return data as never;
