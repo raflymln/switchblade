@@ -28,11 +28,11 @@ export type RegisteredRoute = {
     errorHandlers: ErrorHandler[];
     validation?: RouteValidationOptions;
     openapi?: OpenAPIMetadata;
-    run: (request: Request, params: Record<string, string>) => Promise<Response>;
+    run: (request: Request, params?: Record<string, string>) => Promise<Response>;
 };
 
-export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => void | Response | Promise<void | Response>;
-export type Middleware = (req: SBRequest, res: SBResponse, next: () => Promise<void | Response>) => void | Response | Promise<void | Response>;
+export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => unknown;
+export type Middleware = (req: SBRequest, res: SBResponse, next: () => unknown) => unknown;
 
 /**
  * Route handler type for both middleware and route handler.
@@ -44,7 +44,7 @@ export type RouteHandler<
     Headers extends SBRequestParamSchema = SBRequestParamSchema,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
-> = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => void | Response | Promise<void | Response>;
+> = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => unknown;
 
 /**
  * Validation options for the route.
@@ -307,7 +307,7 @@ export class Switchblade {
                 responses: options?.responses,
                 cookies: options?.cookies,
             },
-            async run(request, params) {
+            async run(request, params = {}) {
                 const sbReq = new SBRequest(request, params as never, {
                     query: this.validation?.query,
                     params: this.validation?.params,
@@ -319,56 +319,22 @@ export class Switchblade {
 
                 try {
                     let middlewareIndex = 0;
-                    let response: Response | undefined;
 
-                    const run = async (): Promise<void | Response> => {
-                        // Store current index before calling middleware
-                        const currentIndex = middlewareIndex;
-
+                    // In this runner function we don't use return, it's because sometimes in the middleware,
+                    // user doesn't return the next() function, instead it just calls the function.
+                    const run = async () => {
                         // If we've gone through all middlewares, execute the handler
-                        if (currentIndex === this.middlewares.length) {
-                            response = (await this.handler(sbReq, sbRes)) || undefined;
-                            return response;
+                        if (middlewareIndex === this.middlewares.length) {
+                            await this.handler(sbReq, sbRes);
+                            return;
                         }
 
-                        // Create a promise that will be resolved when next() is called
-                        let nextCalled = false;
-                        let resolveNext: (value: void | Response) => void;
-                        const nextPromise = new Promise<void | Response>((resolve) => {
-                            resolveNext = resolve;
-                        });
-
-                        // Define our next function to track when it's called
-                        const next = async () => {
-                            nextCalled = true;
-                            const nextResult = await run(); // Call next middleware
-                            resolveNext(nextResult);
-                            return nextResult;
-                        };
-
-                        // Increment index before calling middleware
-                        middlewareIndex++;
-
-                        // Call the middleware
-                        const middlewareResponse = await this.middlewares[currentIndex](sbReq, sbRes, next);
-
-                        // If middleware returned a response directly, use it
-                        if (middlewareResponse) {
-                            response = middlewareResponse;
-                            return middlewareResponse;
-                        }
-
-                        // If next() was called, wait for its completion and prioritize its result
-                        if (nextCalled) {
-                            const nextResult = await nextPromise;
-                            return nextResult; // Always return the deeper middleware/handler response
-                        }
-
-                        return response;
+                        // Iterate through the middlewares
+                        await this.middlewares[middlewareIndex++](sbReq, sbRes, run);
                     };
 
                     await run();
-                    return response || sbRes.end();
+                    return sbRes.response || sbRes.end();
                 } catch (error) {
                     for (const errorHandler of this.errorHandlers) {
                         await errorHandler(error, sbReq, sbRes);

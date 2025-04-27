@@ -116,10 +116,6 @@ export class SBResponse<Responses extends SBResponseSchema = SBResponseSchema> {
      * @param init Response Init
      */
     createResponse(body?: RequestInit["body"], init?: ResponseInit): Response {
-        if (this.response) {
-            throw new Error("Response already created");
-        }
-
         this.response = new Response(body, {
             status: this.statusCode,
             headers: this.headers,
