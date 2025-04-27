@@ -48,7 +48,6 @@ const userRoutes = new Switchblade()
 
             return res //
                 .status(201)
-                .setContentType("application/json")
                 .setHeader("x-powered-by", "Switchblade")
                 .json({
                     id: Date.now(),
@@ -72,10 +71,15 @@ const userRoutes = new Switchblade()
                 },
             },
             query: {
-                page: z.string().optional().default("1").nullish().openapi({
-                    description: "The page number for pagination",
-                    example: " 1",
-                }),
+                page: z
+                    .string()
+                    .refine((v) => !isNaN(Number(v)), {
+                        message: "ID must be a number",
+                    })
+                    .openapi({
+                        description: "The page number for pagination",
+                        example: "1",
+                    }),
             },
             headers: {
                 // Always use lower case for headers
@@ -167,21 +171,16 @@ const mainApp = new Switchblade({
     })
     // Error handler bind to the chained routes & middleware below
     .onError((error, req, res) => {
-        console.error(error);
-
         // Handle Zod validation errors
         if (error instanceof ZodError) {
-            return res.status(400).json({
-                message: "Validation Error",
-                details: error.message,
-            });
+            return res.status(400).json(error);
         }
 
         // Handle Typebox validation errors
         if (error instanceof AssertError) {
             return res.status(400).json({
                 message: "Validation Error",
-                details: error.message,
+                details: error.error,
             });
         }
 
@@ -200,6 +199,7 @@ const mainApp = new Switchblade({
         }
 
         // By default if you don't handle the error, it will return a 500 "Internal Server Error"
+        console.error(error);
     })
     // User Management Routes
     .group("/users", userRoutes)
@@ -228,6 +228,18 @@ const mainApp = new Switchblade({
         async (req, res) => {
             const name = decodeURIComponent(req.params.name);
             await new Promise((resolve) => setTimeout(resolve, 1000));
+
+            if (name.length > 10) {
+                if (req.contentType === "text/plain") {
+                    return res.status(400).setContentType("text/plain").send("Name too long");
+                }
+
+                return res.status(400).setContentType("application/json").send({
+                    message: "Name too long",
+                    details: "Name must be less than 10 characters",
+                });
+            }
+
             console.log(`           Hello ${name}!`);
             return res.status(200).text(`Hello ${name}!`);
         },
@@ -237,6 +249,28 @@ const mainApp = new Switchblade({
                     description: "The name of the user",
                     example: "John Doe",
                 }),
+            },
+            responses: {
+                200: {
+                    content: {
+                        "text/plain": z.string().openapi({
+                            description: "The greeting message",
+                            example: "Hello John Doe!",
+                        }),
+                    },
+                },
+                400: {
+                    content: {
+                        "application/json": z.object({
+                            message: z.string(),
+                            details: z.string(),
+                        }),
+                        "text/plain": z.string().openapi({
+                            description: "The error message",
+                            example: "Name too long",
+                        }),
+                    },
+                },
             },
         }
     );
