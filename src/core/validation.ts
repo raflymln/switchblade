@@ -2,7 +2,7 @@ import type { Static, TSchema } from "@sinclair/typebox";
 import type { z } from "zod";
 
 import { TypeGuard } from "@sinclair/typebox";
-import { Value } from "@sinclair/typebox/value";
+import { AssertError, Value } from "@sinclair/typebox/value";
 import { ZodSchema } from "zod";
 
 /**
@@ -33,16 +33,24 @@ export type InferValidationSchemaInRecord<T> = T extends object
  * @param data Data to be validated
  * @returns Parsed data or throws an error if validation fails
  */
-export const validate = (schema: AnyValidationSchema, data: unknown) => {
-    // Check for Zod schema
-    if (schema instanceof ZodSchema) {
-        return schema.parse(data);
-    }
+export const validate = (schema: AnyValidationSchema, data: unknown, path: string[]) => {
+    try {
+        // Check for Zod schema
+        if (schema instanceof ZodSchema) {
+            return schema.parse(data, { path });
+        }
 
-    // Check for TypeBox schema
-    if (TypeGuard.IsSchema(schema)) {
-        return Value.Parse(schema, data);
-    }
+        // Check for TypeBox schema
+        if (TypeGuard.IsSchema(schema)) {
+            return Value.Parse(schema, data);
+        }
 
-    throw new Error("Unsupported validation schema");
+        throw new Error("Unsupported validation schema");
+    } catch (error) {
+        if (error instanceof AssertError) {
+            (error as AssertError & { path: string[] }).path = path;
+        }
+
+        throw error;
+    }
 };
