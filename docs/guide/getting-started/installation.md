@@ -3,12 +3,13 @@
 ## Prerequisites
 
 - Node.js 18+
-- npm, pnpm, or yarn
+- npm, pnpm, yarn, bun, or any other package manager
 - TypeScript (recommended)
+- Patience (optional, but highly recommended)
 
 ## Installation
 
-You can choose to install Switchblade with your preferred validation library:
+1. Install Switchblade and the desired validation library. **You only need to install the one you plan to use**, but if you want to use all, what are we to judge? 🤷‍♂️😏
 
 ::: code-group
 
@@ -20,14 +21,16 @@ npm install @takodotid/switchblade zod
 npm install @takodotid/switchblade @sinclair/typebox
 ```
 
-```bash [Optional: Hono Adapter]
+:::
+
+2. Install the desired adapter.
+
+::: code-group
+
+```bash [Hono]
 npm install hono @hono/node-server
 ```
 
-:::
-
-::: tip Choose Your Validation Library
-Switchblade supports multiple validation libraries. You only need to install the one you plan to use.
 :::
 
 ## Project Setup
@@ -46,7 +49,7 @@ See [Installation](#installation) for the required dependencies.
 
 ### 3. TypeScript Configuration
 
-Create a `tsconfig.json`:
+Create a `tsconfig.json`, here's the recommended configuration:
 
 ```json
 {
@@ -61,23 +64,7 @@ Create a `tsconfig.json`:
 
 ### 4. First Switchblade App
 
-Create an `index.ts`:
-
-```typescript
-import { Switchblade } from "@takodotid/switchblade";
-import { createHonoAdapter } from "@takodotid/switchblade/adapters/hono";
-import { serve } from "@hono/node-server";
-import { z } from "zod";
-
-const app = new Switchblade();
-
-app.get("/", (req, res) => {
-    return res.json(200, { message: "Hello, Switchblade!" });
-});
-
-const hono = createHonoAdapter(app);
-serve({ fetch: hono.fetch, port: 3000 });
-```
+See [Quick Example](introduction.md#quick-example) for a simple example of how to use Switchblade.
 
 ### 5. Add Scripts to `package.json`
 
@@ -97,5 +84,5 @@ To get started quickly, we recommend using the `tsx` library to run TypeScript f
 ## Running the Application
 
 ```bash
-npm start
+npm dev # Will restart the server on changes
 ```

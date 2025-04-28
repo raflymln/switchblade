@@ -20,7 +20,7 @@ export default defineConfig({
 
         nav: [
             { text: "Home", link: "/" },
-            { text: "Docs", link: "/guide/introduction" },
+            { text: "Docs", link: "/guide/getting-started/introduction" },
             {
                 text: "Resources",
                 items: [
@@ -35,24 +35,27 @@ export default defineConfig({
                 {
                     text: "Getting Started",
                     items: [
-                        { text: "Introduction", link: "/guide/introduction" },
-                        { text: "Installation", link: "/guide/installation" },
+                        { text: "Introduction", link: "/guide/getting-started/introduction" },
+                        { text: "Installation", link: "/guide/getting-started/installation" },
                     ],
                 },
                 {
                     text: "Core Concepts",
                     items: [
-                        { text: "Routing", link: "/guide/routing" },
-                        { text: "Validation", link: "/guide/validation" },
-                        { text: "Adapters", link: "/guide/adapters" },
-                        { text: "OpenAPI", link: "/guide/openapi" },
+                        { text: "Routing", link: "/guide/core-concepts/routing" },
+                        { text: "Request", link: "/guide/core-concepts/request" },
+                        { text: "Response", link: "/guide/core-concepts/response" },
+                        { text: "Validation", link: "/guide/core-concepts/validation" },
+                        { text: "Adapters", link: "/guide/core-concepts/adapters" },
+                        { text: "OpenAPI", link: "/guide/core-concepts/openapi" },
                     ],
                 },
                 {
                     text: "Advanced Topics",
                     items: [
-                        { text: "Middleware", link: "/guide/middleware" },
-                        { text: "Error Handling", link: "/guide/error-handling" },
+                        { text: "Middleware", link: "/guide/advanced/middleware" },
+                        { text: "Error Handling", link: "/guide/advanced/error-handling" },
+                        { text: "Testing", link: "/guide/advanced/testing" },
                     ],
                 },
             ],
@@ -77,7 +80,7 @@ export default defineConfig({
     },
 
     head: [
-        ["link", { rel: "icon", href: "/favicon.ico" }],
+        // ["link", { rel: "icon", href: "/favicon.ico" }],
         ["meta", { name: "og:title", content: "Switchblade" }],
         ["meta", { name: "og:description", content: "2nd level Javascript framework abstraction" }],
     ],

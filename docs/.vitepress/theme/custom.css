@@ -1,0 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,100..900;1,100..900&display=swap");
+
+:root {
+    --vp-font-family-base: "Public Sans", sans-serif;
+}
+
+#introduction-features {
+    padding: 1rem 0;
+}
+
+#introduction-features .item {
+    width: calc(100% / 1);
+}
+
+@media (min-width: 768px) {
+    #introduction-features .item {
+        width: calc(100% / 2);
+    }
+}
+
+#introduction-features .item .title {
+    padding: 0;
+    border-top: none;
+    margin: 0;
+}
+
+#introduction-features .item .details {
+    margin: 10px 0;
+}
