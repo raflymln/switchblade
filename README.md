@@ -1,5 +1,7 @@
 # 🔪 Switchblade
 
+## ⚠️ Switchblade currently on the `Pre-Release` stage, although it's stable, the features is complete, and ready to be used in production, we still need your feedback to make it better, and testing it further. ⚠️
+
 Switchblade is Javascript **backend abstraction layer** to allow developers to create APIs equpped with various features and also make it easy to switch between different backend frameworks like Hono, Express, and Fastify.
 
 > Switchblade is built by the team behind [Tako](https://tako.id), and licensed under the **MIT License** as part of our open source mission.
