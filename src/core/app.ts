@@ -283,12 +283,24 @@ export class Switchblade {
      * Register a new route to the Switchblade instance.
      * If the route already exists with the same method and path, it will throw an error.
      *
-     * @param method GET, POST, PUT, DELETE, PATCH, OPTIONS
+     * @param method GET, POST, PUT, DELETE, PATCH, OPTIONS or any other HTTP method
      * @param path The path to the route (follows the adapter format)
      * @param handler The route handler
      * @param options The route options
      */
-    private define(method: RegisteredRoute["method"], path: string, handler: RouteHandler, options?: RouteOptions): this {
+    route<
+        Params extends SBRequestParamSchema = SBRequestParamSchema,
+        Query extends SBRequestParamSchema = SBRequestParamSchema,
+        Body extends SBRequestBodySchema = SBRequestBodySchema,
+        Headers extends SBRequestParamSchema = SBRequestParamSchema,
+        Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+        Responses extends SBResponseSchema = SBResponseSchema,
+    >(
+        method: RegisteredRoute["method"],
+        path: string,
+        handler: RouteHandler<Params, Query, Body, Headers, Cookies, Responses>,
+        options?: RouteOptions<Params, Query, Body, Headers, Cookies, Responses>
+    ): this {
         if (this.routes.find((route) => route.method === method && route.path === path)) {
             throw new Error(`Route ${method} ${path} already exists.`);
         }
@@ -299,7 +311,7 @@ export class Switchblade {
         const route: RegisteredRoute = {
             method,
             path,
-            handler,
+            handler: handler as never,
             middlewares: [...this.middlewares],
             errorHandlers: [...this.errorHandlers],
             openapi: options?.openapi,
@@ -365,12 +377,12 @@ export class Switchblade {
         return this;
     }
 
-    get = this.define.bind(this, "GET") as RouteMethod;
-    post = this.define.bind(this, "POST") as RouteMethod;
-    put = this.define.bind(this, "PUT") as RouteMethod;
-    delete = this.define.bind(this, "DELETE") as RouteMethod;
-    patch = this.define.bind(this, "PATCH") as RouteMethod;
-    options = this.define.bind(this, "OPTIONS") as RouteMethod;
+    get = this.route.bind(this, "GET") as RouteMethod;
+    post = this.route.bind(this, "POST") as RouteMethod;
+    put = this.route.bind(this, "PUT") as RouteMethod;
+    delete = this.route.bind(this, "DELETE") as RouteMethod;
+    patch = this.route.bind(this, "PATCH") as RouteMethod;
+    options = this.route.bind(this, "OPTIONS") as RouteMethod;
     all = ((path: string, handler: RouteHandler, options?: RouteOptions) => {
         this.get(path, handler, options);
         this.post(path, handler, options);

@@ -51,8 +51,8 @@ export class SBRequest<
             params?: SBRequestParamSchema;
             query?: SBRequestParamSchema;
             headers?: SBRequestParamSchema;
-            body?: SBRequestBodySchema;
             cookies?: SBRequestParamSchema;
+            body?: SBRequestBodySchema;
         }
     ) {}
 
@@ -173,9 +173,11 @@ export class SBRequest<
     /**
      * Get the content type of the request
      *
-     * For content type of "multipart/form-data", it contains a boundary, for example it looks like this:
-     * `Content-Type: multipart/form-data; boundary=---WebKitFormBoundary7MA4YWxkTrZu0gW ...`
-     * So we only took the front part of the value which is "multipart/form-data` and ignore the rest
+     * For content type like `multipart/form-data`, it contains a boundary, for example it looks like this:
+     * ```
+     * Content-Type: multipart/form-data; boundary=---WebKitFormBoundary7MA4YWxkTrZu0gW ...
+     * ```
+     * So we only took the front part of the value which is `multipart/form-data` and ignore the rest
      *
      * @example `application/json`
      */
@@ -186,10 +188,15 @@ export class SBRequest<
     /**
      * Parse the request body to JSON and validate it against the schema
      *
-     * By default, it'd infer the type from request body "application/json" schema,
-     * but you can specify a different content type by using `await req.json<"application/x-www-form-urlencoded">` in the generic type
+     * Supports:
+     * - `application/json`
+     * - `application/x-www-form-urlencoded` (will be parsed as key-value pairs)
+     * - `multipart/form-data` (will be parsed as key-value pairs)
      *
-     * If the request body is not JSON (except for "application/x-www-form-urlencoded`), it will return an empty object
+     * By default, it'd infer the type from request body `application/json` schema,
+     * but you can specify a different content type by using `await req.json<"application/x-www-form-urlencoded">` in the generic type.
+     *
+     * If the request body is not JSON, it will try to parse it as JSON, and if it fails, it will return an empty object
      *
      * @example const { email, name } = await req.json();
      */
@@ -223,6 +230,36 @@ export class SBRequest<
                 data = result as never;
                 break;
             }
+
+            case "multipart/form-data": {
+                const formData = await request.formData();
+                const result: Record<string, unknown> = {};
+
+                formData.forEach((value, key) => {
+                    // Handle arrays (keys that appear multiple times)
+                    if (result[key]) {
+                        if (Array.isArray(result[key])) {
+                            result[key].push(value);
+                        } else {
+                            result[key] = [result[key], value];
+                        }
+                    } else {
+                        result[key] = value;
+                    }
+                });
+
+                data = result as never;
+                break;
+            }
+
+            // case "application/xml":
+            // case "text/xml": {
+            //     const text = await request.text();
+            //     const parser = new DOMParser(); // TODO: Find a good library for this
+            //     const xmlDoc = parser.parseFromString(text, "text/xml");
+            //     data = { xml: xmlDoc } as never;
+            //     break;
+            // }
 
             default: {
                 try {

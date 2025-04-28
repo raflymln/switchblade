@@ -29,29 +29,22 @@ export class SBResponse<
     /**
      * The current status code to return to client
      */
-    statusCode: number = 200;
+    private statusCode: number = 200;
 
     /**
      * The current content type to return to client
      */
-    contentType: string = "application/json";
+    private contentType: string = "application/json";
 
     /**
      * The current headers to return to client
      */
-    headers: Headers = new Headers();
+    private headers: Headers = new Headers();
 
     /**
      * The current response object
      */
     response: Response | null = null;
-
-    /**
-     * The current cookie list to be set on client
-     */
-    get cookies(): Record<string, string | undefined> {
-        return cookie.parse(this.headers.get("Set-Cookie") || "");
-    }
 
     /**
      * Set status code of the response
@@ -148,11 +141,10 @@ export class SBResponse<
     /**
      * Redirect the client to a new URL
      *
-     * @param statusCode Status code
      * @param url URL to redirect to
      */
-    redirect(statusCode: number = 302, url: string): Response {
-        return this.status(statusCode).setHeader("Location", url).createResponse();
+    redirect(url: string): Response {
+        return this.status(this.statusCode).setHeader("Location", url).createResponse();
     }
 
     /**
@@ -165,8 +157,6 @@ export class SBResponse<
     /**
      * Send a typed response to the client, this will follow the validation schema provided
      *
-     * @param code Status code
-     * @param contentType Content type
      * @param data Typed response data
      */
     send(data: InferValidationSchema<Responses[StatusCode]["content"][ContentType]>): Response {
@@ -196,7 +186,6 @@ export class SBResponse<
     /**
      * Send a JSON response to the client, the content type will be set to "application/json"
      *
-     * @param code Status code
      * @param data Response data following "application/json" schema
      */
     json(data: InferValidationSchema<Responses[StatusCode]["content"]["application/json"]>): Response {
@@ -206,7 +195,6 @@ export class SBResponse<
     /**
      * Send a text response to the client, the content type will be set to "text/plain"
      *
-     * @param code Status code
      * @param data Response data following "text/plain" schema
      */
     text(data: InferValidationSchema<Responses[StatusCode]["content"]["text/plain"]>): Response {
@@ -216,7 +204,6 @@ export class SBResponse<
     /**
      * Send a HTML response to the client, the content type will be set to "text/html"
      *
-     * @param code Status code
      * @param data Response data following "text/html" schema
      */
     html(data: InferValidationSchema<Responses[StatusCode]["content"]["text/html"]>): Response {
