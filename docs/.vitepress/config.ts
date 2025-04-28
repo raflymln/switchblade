@@ -5,7 +5,6 @@ import taskLists from "markdown-it-task-lists";
 export default defineConfig({
     title: "Switchblade",
     description: "A Modern Backend Framework for TypeScript Developers",
-    ignoreDeadLinks: true,
     lastUpdated: true,
 
     // Theme configuration
