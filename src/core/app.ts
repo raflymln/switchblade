@@ -1,10 +1,10 @@
-import type { DefaultRequestType, RequestSchema, SBRequest, DefaultResponsesType, ResponseSchema, SBResponse, OpenAPIMetadata } from "@/index";
+import type { SBRequestParamSchema, SBResponseSchema, OpenAPIMetadata, SBRequestBodySchema } from "..";
 import type { OpenAPIV3_1 } from "openapi-types";
+
+import { convertValidationSchemaToOpenAPI3_1Schema, SBRequest, SBResponse } from "..";
 
 import { z } from "zod";
 import { extendZodWithOpenApi } from "zod-openapi";
-
-import { convertSchemaToOpenAPISchema } from "@/index";
 
 extendZodWithOpenApi(z);
 
@@ -21,38 +21,41 @@ export type SwitchbladeConfig = {
  * This is the object that is returned when a route is registered.
  */
 export type RegisteredRoute = {
-    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS";
+    method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | (string & NonNullable<unknown>);
     path: string;
     handler: RouteHandler;
-    middlewares: RouteHandler[];
+    middlewares: Middleware[];
+    errorHandlers: ErrorHandler[];
     validation?: RouteValidationOptions;
     openapi?: OpenAPIMetadata;
+    run: (request: Request, params?: Record<string, string>) => Promise<Response>;
 };
 
-export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => void | Promise<void> | Response | Promise<Response>;
+export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => unknown;
+export type Middleware = (req: SBRequest, res: SBResponse, next: () => unknown) => unknown;
 
 /**
  * Route handler type for both middleware and route handler.
  */
 export type RouteHandler<
-    Params = DefaultRequestType, //
-    Query = DefaultRequestType,
-    Body = DefaultRequestType,
-    Headers = DefaultRequestType,
-    Cookies = DefaultRequestType,
-    Responses extends DefaultResponsesType = DefaultResponsesType,
-> = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => void | Promise<void> | Response | Promise<Response>;
+    Params extends SBRequestParamSchema = SBRequestParamSchema,
+    Query extends SBRequestParamSchema = SBRequestParamSchema,
+    Body extends SBRequestBodySchema = SBRequestBodySchema,
+    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+    Responses extends SBResponseSchema = SBResponseSchema,
+> = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => unknown;
 
 /**
  * Validation options for the route.
  */
 export type RouteValidationOptions<
-    Params extends RequestSchema = RequestSchema,
-    Query extends RequestSchema = RequestSchema,
-    Body extends RequestSchema = RequestSchema,
-    Headers extends RequestSchema = RequestSchema,
-    Cookies extends RequestSchema = RequestSchema,
-    Responses extends ResponseSchema = ResponseSchema,
+    Params extends SBRequestParamSchema = SBRequestParamSchema,
+    Query extends SBRequestParamSchema = SBRequestParamSchema,
+    Body extends SBRequestBodySchema = SBRequestBodySchema,
+    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+    Responses extends SBResponseSchema = SBResponseSchema,
 > = {
     params?: Params;
     query?: Query;
@@ -66,13 +69,13 @@ export type RouteValidationOptions<
  * Available options in the route methods.
  */
 export type RouteOptions<
-    Params extends RequestSchema = RequestSchema,
-    Query extends RequestSchema = RequestSchema,
-    Body extends RequestSchema = RequestSchema,
-    Headers extends RequestSchema = RequestSchema,
-    Cookies extends RequestSchema = RequestSchema,
-    Responses extends ResponseSchema = ResponseSchema,
-> = RouteValidationOptions<Params, Query, Headers, Body, Cookies, Responses> & {
+    Params extends SBRequestParamSchema = SBRequestParamSchema,
+    Query extends SBRequestParamSchema = SBRequestParamSchema,
+    Body extends SBRequestBodySchema = SBRequestBodySchema,
+    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+    Responses extends SBResponseSchema = SBResponseSchema,
+> = RouteValidationOptions<Params, Query, Body, Headers, Cookies, Responses> & {
     openapi?: OpenAPIMetadata;
 };
 
@@ -81,30 +84,70 @@ export type RouteOptions<
  * This is binded in .get, .post, .put, .delete, .patch, .options methods.
  */
 export type RouteMethod = <
-    Params extends RequestSchema = RequestSchema,
-    Query extends RequestSchema = RequestSchema,
-    Body extends RequestSchema = RequestSchema,
-    Headers extends RequestSchema = RequestSchema,
-    Cookies extends RequestSchema = RequestSchema,
-    Responses extends ResponseSchema = ResponseSchema,
+    Params extends SBRequestParamSchema = SBRequestParamSchema,
+    Query extends SBRequestParamSchema = SBRequestParamSchema,
+    Body extends SBRequestBodySchema = SBRequestBodySchema,
+    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+    Responses extends SBResponseSchema = SBResponseSchema,
 >(
     path: string,
     handler: RouteHandler<Params, Query, Body, Headers, Cookies, Responses>,
-    options?: RouteOptions<Params, Query, Headers, Body, Cookies, Responses>
+    options?: RouteOptions<Params, Query, Body, Headers, Cookies, Responses>
 ) => Switchblade;
 
 export class Switchblade {
     constructor(public config: SwitchbladeConfig = {}) {}
 
+    /**
+     * List of registered routes on Switchblade
+     */
     routes: RegisteredRoute[] = [];
+
+    /**
+     * List of registered error handlers on Switchblade
+     */
     errorHandlers: ErrorHandler[] = [];
-    middlewares: RouteHandler[] = [];
+
+    /**
+     * List of registered middlewares on Switchblade
+     */
+    middlewares: Middleware[] = [];
+
+    /**
+     * Get the registered route by method and path
+     * This is useful for testing
+     *
+     * @param method Route Method
+     * @param path Route Registered Path
+     *
+     * @example
+     * ```ts
+     * describe('Example', () => {
+     *     test('Get Specific User', async () => {
+     *         const res = await app.getRoute("GET", "/user/:id").run(new Request(), { id: crypto.randomUUID() })
+     *         expect(res.status).toBe(200)
+     *     })
+     * })
+     * ```
+     */
+    getRoute(method: RegisteredRoute["method"], path: string): RegisteredRoute | undefined {
+        return this.routes.find((route) => route.method === method && route.path === path);
+    }
 
     /**
      * Generate OpenAPI 3.1 document based on routes and configurations
-     * @returns OpenAPI 3.1 document
+     *
+     * @example
+     * ```ts
+     * // Set route for OpenAPI document API
+     * app.get("/openapi.json", (req, res) => res.json(200, app.getOpenAPI31Document()))
+     *
+     * // Here we took an example using "hono" and "@scalar/hono-api-reference" package
+     * // Set the swagger UI to use the published OpenAPI document API
+     * hono.get("/swagger", Scalar({ url: "/openapi.json" }));
      */
-    getOpenAPI31Document(): OpenAPIV3_1.Document {
+    getOpenAPI3_1Document(): OpenAPIV3_1.Document {
         if (!this.config.openapi) {
             throw new Error("OpenAPI configuration is not provided.");
         }
@@ -115,10 +158,9 @@ export class Switchblade {
         };
 
         for (const route of this.routes) {
-            // Skip if route is hidden
-            if (route.openapi?.hide) continue;
+            if (route.openapi?.hide) continue; // Skip if route is hidden or openapi is not provided
 
-            const fullPath = `${this.config?.basePath || ""}${route.path}`;
+            const fullPath = `${this.config?.basePath || ""}${route.path}`.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => `{${paramName}}`);
             if (!document.paths![fullPath]) document.paths![fullPath] = {};
 
             const metadata: OpenAPIV3_1.OperationObject = {
@@ -128,69 +170,36 @@ export class Switchblade {
             };
 
             if (route.validation?.body) {
-                const validationSchema: Record<string, OpenAPIV3_1.SchemaObject> = {};
-
-                // Handle different content types
-                Object.entries(route.validation.body).forEach(([key, schema]) => {
-                    validationSchema[key] = convertSchemaToOpenAPISchema(schema);
-                });
-
                 metadata.requestBody = {
-                    content: {
-                        [route.openapi?.type || "application/json"]: {
-                            schema: {
-                                type: "object",
-                                properties: validationSchema,
-                            },
-                        },
-                    },
+                    required: route.validation.body.required,
+                    description: route.validation.body.description || "",
+                    summary: route.validation.body.summary || "",
+                    content: {},
                 };
-            }
 
-            if (route.validation?.query) {
-                Object.entries(route.validation.query).forEach(([key, schema]) => {
-                    metadata.parameters!.push({
-                        name: key,
-                        in: "query",
-                        required: false,
-                        description: "",
-                        schema: convertSchemaToOpenAPISchema(schema) as never,
-                    });
+                Object.entries(route.validation.body.content).forEach(([contentType, schema]) => {
+                    (metadata.requestBody as OpenAPIV3_1.RequestBodyObject)!.content![contentType] = {
+                        schema: convertValidationSchemaToOpenAPI3_1Schema(schema),
+                    };
                 });
             }
 
-            if (route.validation?.params) {
-                Object.entries(route.validation.params).forEach(([key, schema]) => {
-                    metadata.parameters!.push({
-                        name: key,
-                        in: "path",
-                        required: false,
-                        description: "",
-                        schema: convertSchemaToOpenAPISchema(schema) as never,
-                    });
-                });
-            }
+            const params: [SBRequestParamSchema | undefined, string][] = [
+                [route.validation?.query, "query"],
+                [route.validation?.params, "path"],
+                [route.validation?.headers, "header"],
+                [route.validation?.cookies, "cookie"],
+            ];
 
-            if (route.validation?.headers) {
-                Object.entries(route.validation.headers).forEach(([key, schema]) => {
-                    metadata.parameters!.push({
-                        name: key,
-                        in: "header",
-                        required: false,
-                        description: "",
-                        schema: convertSchemaToOpenAPISchema(schema) as never,
-                    });
-                });
-            }
+            for (const [validation, inType] of params) {
+                if (!validation) continue;
 
-            if (route.validation?.cookies) {
-                Object.entries(route.validation.cookies).forEach(([key, schema]) => {
+                Object.entries(validation).forEach(([key, schema]) => {
                     metadata.parameters!.push({
                         name: key,
-                        in: "cookie",
-                        required: false,
-                        description: "",
-                        schema: convertSchemaToOpenAPISchema(schema) as never,
+                        in: inType,
+                        required: inType === "path",
+                        schema: convertValidationSchemaToOpenAPI3_1Schema(schema) as never,
                     });
                 });
             }
@@ -198,26 +207,23 @@ export class Switchblade {
             if (route.validation?.responses) {
                 Object.entries(route.validation.responses).forEach(([statusCode, config]) => {
                     const response: OpenAPIV3_1.ResponseObject = {
-                        description: (config as DefaultResponsesType[number]).description || "",
+                        description: (config as SBResponseSchema[number]).description || "",
                         content: {},
                         headers: {},
-                        links: {},
                     };
 
                     if (config.content) {
                         Object.entries(config.content).forEach(([contentType, schema]) => {
                             response.content![contentType] = {
-                                schema: convertSchemaToOpenAPISchema(schema),
+                                schema: convertValidationSchemaToOpenAPI3_1Schema(schema),
                             };
                         });
                     }
 
                     if (config.headers) {
-                        response.headers = {};
                         Object.entries(config.headers).forEach(([headerName, schema]) => {
                             response.headers![headerName] = {
-                                description: "",
-                                schema: convertSchemaToOpenAPISchema(schema) as never,
+                                schema: convertValidationSchemaToOpenAPI3_1Schema(schema) as never,
                             };
                         });
                     }
@@ -234,26 +240,80 @@ export class Switchblade {
         return document;
     }
 
-    use(middleware: RouteHandler) {
+    /**
+     * Set a middleware to intercept other middleware and
+     * request handlers that are registered after it.
+     *
+     * @param middleware The middleware function
+     *
+     * @example
+     * ```ts
+     * app
+     *    .use(middleware())
+     *    .get("/users", handler) // Will be intercepted by the middleware
+     * ```
+     */
+    use(middleware: Middleware): this {
         this.middlewares.push(middleware);
         return this;
     }
 
-    onError(handler: ErrorHandler) {
+    /**
+     * Set a error handler to intercept all errors that are thrown in the middleware and request handlers in the chain.
+     * To make a global error handler, put this method to be the first one in the chain.
+     *
+     * @param handler The error handler function
+     *
+     * @example
+     * ```ts
+     * app
+     *    .onError(errorHandler())
+     *    // If an error is thrown in the middleware and the route handler, the previous
+     *    // registered error handler will be used to handle the error
+     *    .use(middleware())
+     *    .get("/users", handler)
+     * ```
+     */
+    onError(handler: ErrorHandler): this {
         this.errorHandlers.push(handler);
         return this;
     }
 
-    private define(method: RegisteredRoute["method"], path: string, handler: RouteHandler, options?: RouteOptions) {
+    /**
+     * Register a new route to the Switchblade instance.
+     * If the route already exists with the same method and path, it will throw an error.
+     *
+     * @param method GET, POST, PUT, DELETE, PATCH, OPTIONS or any other HTTP method
+     * @param path The path to the route (follows the adapter format)
+     * @param handler The route handler
+     * @param options The route options
+     */
+    route<
+        Params extends SBRequestParamSchema = SBRequestParamSchema,
+        Query extends SBRequestParamSchema = SBRequestParamSchema,
+        Body extends SBRequestBodySchema = SBRequestBodySchema,
+        Headers extends SBRequestParamSchema = SBRequestParamSchema,
+        Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+        Responses extends SBResponseSchema = SBResponseSchema,
+    >(
+        method: RegisteredRoute["method"],
+        path: string,
+        handler: RouteHandler<Params, Query, Body, Headers, Cookies, Responses>,
+        options?: RouteOptions<Params, Query, Body, Headers, Cookies, Responses>
+    ): this {
         if (this.routes.find((route) => route.method === method && route.path === path)) {
             throw new Error(`Route ${method} ${path} already exists.`);
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
+        const app = this;
+
         const route: RegisteredRoute = {
             method,
             path,
-            handler,
+            handler: handler as never,
             middlewares: [...this.middlewares],
+            errorHandlers: [...this.errorHandlers],
             openapi: options?.openapi,
             validation: {
                 body: options?.body,
@@ -263,18 +323,66 @@ export class Switchblade {
                 responses: options?.responses,
                 cookies: options?.cookies,
             },
+            async run(request, params = {}) {
+                const sbReq = new SBRequest(app, request, params as never, {
+                    query: this.validation?.query,
+                    params: this.validation?.params,
+                    headers: this.validation?.headers,
+                    body: this.validation?.body,
+                    cookies: this.validation?.cookies,
+                });
+
+                const sbRes = new SBResponse(this.validation?.responses);
+
+                try {
+                    // Cache & validate the request params
+                    sbReq.params;
+                    sbReq.headers;
+                    sbReq.query;
+                    sbReq.cookies;
+
+                    // Run the middlewares in order
+                    let middlewareIndex = 0;
+
+                    const run = async () => {
+                        // If we've gone through all middlewares, execute the handler
+                        if (middlewareIndex === this.middlewares.length) {
+                            await this.handler(sbReq, sbRes);
+                            return;
+                        }
+
+                        // Iterate through the middlewares
+                        await this.middlewares[middlewareIndex++](sbReq, sbRes, run);
+                    };
+
+                    await run();
+                    return sbRes.response || sbRes.end();
+                } catch (error) {
+                    for (const errorHandler of this.errorHandlers) {
+                        await errorHandler(error, sbReq, sbRes);
+
+                        if (sbRes.response instanceof Response) {
+                            return sbRes.response;
+                        }
+                    }
+
+                    // By default, if the error handler doesn't return a response,
+                    // send a 500 error with "Internal Server Error" message
+                    return sbRes.status(500).text("Internal Server Error");
+                }
+            },
         };
 
         this.routes.push(route);
         return this;
     }
 
-    get = this.define.bind(this, "GET") as RouteMethod;
-    post = this.define.bind(this, "POST") as RouteMethod;
-    put = this.define.bind(this, "PUT") as RouteMethod;
-    delete = this.define.bind(this, "DELETE") as RouteMethod;
-    patch = this.define.bind(this, "PATCH") as RouteMethod;
-    options = this.define.bind(this, "OPTIONS") as RouteMethod;
+    get = this.route.bind(this, "GET") as RouteMethod;
+    post = this.route.bind(this, "POST") as RouteMethod;
+    put = this.route.bind(this, "PUT") as RouteMethod;
+    delete = this.route.bind(this, "DELETE") as RouteMethod;
+    patch = this.route.bind(this, "PATCH") as RouteMethod;
+    options = this.route.bind(this, "OPTIONS") as RouteMethod;
     all = ((path: string, handler: RouteHandler, options?: RouteOptions) => {
         this.get(path, handler, options);
         this.post(path, handler, options);
@@ -285,14 +393,30 @@ export class Switchblade {
         return this;
     }) as RouteMethod;
 
-    group(path: string, cb: (app: Switchblade) => Switchblade) {
-        const subApp = cb(new Switchblade({ ...this.config, basePath: path }));
+    /**
+     * Group the routes inside to isolate it from the rest of the routes.
+     *
+     * @param path The base path to the routes inside the group
+     * @param cb The sub instance of Switchblade
+     *
+     * @example
+     * ```ts
+     * app.group("/users", (group) => {
+     *     return group
+     *         .get("/", handler) // Will be registered as GET /users
+     *         .patch("/:id", handler) // Will be registered as PATCH /users/:id
+     * });
+     * ```
+     */
+    group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade)): this {
+        const subApp = cb instanceof Switchblade ? cb : new Switchblade(this.config);
 
         for (const route of subApp.routes) {
             this.routes.push({
                 ...route,
                 path: `${path}${route.path}`,
                 middlewares: [...this.middlewares, ...route.middlewares],
+                errorHandlers: [...this.errorHandlers, ...route.errorHandlers],
             });
         }
 
