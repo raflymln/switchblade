@@ -279,19 +279,15 @@ const mainApp = new Switchblade({
 describe("Switchblade Example API", async () => {
     await it("GET /users", async () => {
         const route = mainApp.getRoute("GET", "/hello/:name");
+        if (!route) throw new Error("Route not found");
 
-        if (route) {
-            const name = "John Doe";
-            const response = await route.run(new Request("http://localhost:3000", { method: "GET" }), {
-                name: encodeURIComponent(name),
-            });
+        const name = "John Doe";
+        const response = await route.run(new Request("http://localhost:3000", { method: "GET" }), {
+            name: encodeURIComponent(name),
+        });
 
-            assert.strictEqual(response.status, 200);
-            assert.strictEqual(await response.text(), `Hello ${name}!`);
-        } else {
-            console.log("Route not found");
-            throw new Error("Route not found");
-        }
+        assert.strictEqual(response.status, 200);
+        assert.strictEqual(await response.text(), `Hello ${name}!`);
     });
 });
 
