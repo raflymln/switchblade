@@ -56,6 +56,7 @@ export default defineConfig({
                         { text: "Middleware", link: "/guide/advanced/middleware" },
                         { text: "Error Handling", link: "/guide/advanced/error-handling" },
                         { text: "Testing", link: "/guide/advanced/testing" },
+                        { text: "Switchblade vs Other", link: "/guide/advanced/switchblade-vs-x.md" },
                     ],
                 },
             ],
