@@ -305,6 +305,14 @@ export class Switchblade {
             throw new Error(`Route ${method} ${path} already exists.`);
         }
 
+        if (!path.startsWith("/")) {
+            path = `/${path}`;
+        }
+
+        if (path.endsWith("/")) {
+            path = path.slice(0, -1);
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const app = this;
 
@@ -409,7 +417,19 @@ export class Switchblade {
      * ```
      */
     group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade)): this {
-        const subApp = cb instanceof Switchblade ? cb : new Switchblade(this.config);
+        const subApp = cb instanceof Switchblade ? cb : cb(new Switchblade());
+
+        if (path === "/") {
+            path = "";
+        }
+
+        if (!path.startsWith("/")) {
+            path = `/${path}`;
+        }
+
+        if (path.endsWith("/")) {
+            path = path.slice(0, -1);
+        }
 
         for (const route of subApp.routes) {
             this.routes.push({
