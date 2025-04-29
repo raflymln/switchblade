@@ -335,8 +335,7 @@ export class Switchblade {
             path = path.slice(0, -1);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const app = this;
+        const app = this.getOriginalInstance();
 
         const route: RegisteredRoute = {
             method,
