@@ -24,16 +24,16 @@
     "type": "module",
     "exports": {
         ".": {
-            "import": {
-                "types": "./dist/index.d.ts",
-                "default": "./dist/index.js"
-            }
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs",
+            "default": "./dist/index.js"
         },
-        "./adapters/*": {
-            "import": {
-                "types": "./dist/adapters/*.d.ts",
-                "default": "./dist/adapters/*.js"
-            }
+        "./adapters/hono": {
+            "types": "./dist/adapters/hono.d.ts",
+            "import": "./dist/adapters/hono.js",
+            "require": "./dist/adapters/hono.cjs",
+            "default": "./dist/adapters/hono.js"
         }
     },
     "main": "./dist/index.js",
@@ -75,6 +75,10 @@
     },
     "eslintConfig": {
         "parser": "@typescript-eslint/parser",
+        "ignorePatterns": [
+            "dist",
+            "node_modules"
+        ],
         "settings": {
             "import/extensions": [
                 ".ts",
