@@ -29,17 +29,17 @@ export class SBResponse<
     /**
      * The current status code to return to client
      */
-    private statusCode: number = 200;
+    statusCode: number = 200;
 
     /**
      * The current content type to return to client
      */
-    private contentType: string = "application/json";
+    contentType: string = "application/json";
 
     /**
      * The current headers to return to client
      */
-    private headers: Headers = new Headers();
+    headers: Headers = new Headers();
 
     /**
      * The current response object
