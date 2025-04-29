@@ -321,16 +321,21 @@ export class Switchblade {
             throw new Error(`Route ${method} ${path} already exists.`);
         }
 
+        path = path.trim();
+
+        if (path === "") {
+            path = "/";
+        }
+
         if (!path.startsWith("/")) {
             path = `/${path}`;
         }
 
-        if (path.endsWith("/")) {
+        if (path !== "/" && path.endsWith("/")) {
             path = path.slice(0, -1);
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-this-alias
-        const app = this;
+        const app = this.getOriginalInstance();
 
         const route: RegisteredRoute = {
             method,
@@ -439,11 +444,13 @@ export class Switchblade {
         subApp.getOriginalInstance = () => this.getParentInstance();
         subApp.getParentInstance = () => this;
 
+        path = path.trim();
+
         if (path === "/") {
             path = "";
         }
 
-        if (!path.startsWith("/")) {
+        if (path !== "" && !path.startsWith("/")) {
             path = `/${path}`;
         }
 

@@ -8,7 +8,7 @@ This class is NOT extending the [Web Standard Request](https://developer.mozilla
 
 ## .app
 
-The Switchblade instance.
+The original Switchblade instance, the same as calling `app.getOriginalInstance()`.
 
 ## .raw
 
