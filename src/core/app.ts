@@ -100,6 +100,20 @@ export class Switchblade {
     constructor(public config: SwitchbladeConfig = {}) {}
 
     /**
+     * If the current instance is used inside the group, or as any sub instance,
+     * this will return the parent Switchblade instance.
+     *
+     * But if the current instance is the parent, it will return itself.
+     */
+    getParentInstance = (): Switchblade => this;
+
+    /**
+     * Get the original instance of Switchblade.
+     * When used in the nested-nested group, this will always return the original instance.
+     */
+    getOriginalInstance = (): Switchblade => this;
+
+    /**
      * List of registered routes on Switchblade
      */
     routes: RegisteredRoute[] = [];
@@ -148,19 +162,21 @@ export class Switchblade {
      * hono.get("/swagger", Scalar({ url: "/openapi.json" }));
      */
     getOpenAPI3_1Document(): OpenAPIV3_1.Document {
-        if (!this.config.openapi) {
+        const instance = this.getOriginalInstance();
+
+        if (!instance.config.openapi) {
             throw new Error("OpenAPI configuration is not provided.");
         }
 
         const document: OpenAPIV3_1.Document = {
-            ...this.config.openapi,
+            ...instance.config.openapi,
             paths: {},
         };
 
-        for (const route of this.routes) {
+        for (const route of instance.routes) {
             if (route.openapi?.hide) continue; // Skip if route is hidden or openapi is not provided
 
-            const fullPath = `${this.config?.basePath || ""}${route.path}`.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => `{${paramName}}`);
+            const fullPath = `${instance.config?.basePath || ""}${route.path}`.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => `{${paramName}}`);
             if (!document.paths![fullPath]) document.paths![fullPath] = {};
 
             const metadata: OpenAPIV3_1.OperationObject = {
@@ -418,6 +434,10 @@ export class Switchblade {
      */
     group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade)): this {
         const subApp = cb instanceof Switchblade ? cb : cb(new Switchblade());
+
+        subApp.config = this.getOriginalInstance().config;
+        subApp.getOriginalInstance = () => this.getParentInstance();
+        subApp.getParentInstance = () => this;
 
         if (path === "/") {
             path = "";
