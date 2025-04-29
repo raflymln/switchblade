@@ -16,6 +16,18 @@ See the usage for `res.createResponse()` below.
 
 The validation schema for the response.
 
+## .statusCode
+
+The current status code set on the response, default is `200`.
+
+## .contentType
+
+The current content type set on the response, default is `application/json`.
+
+## .headers
+
+[Web Standard Headers](https://developer.mozilla.org/en-US/docs/Web/API/Headers) containing the headers set using `.setHeader`, `.setContentType`, `.setCookie`, and `.removeCookie`.
+
 ## .response
 
 The binded response object, or `null` if not binded yet.
