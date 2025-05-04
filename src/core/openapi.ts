@@ -1,9 +1,9 @@
 import type { AnyValidationSchema } from "..";
 import type { OpenAPIV3_1 } from "openapi-types";
 
+import { generateSchema } from "@anatine/zod-openapi";
 import { TypeGuard } from "@sinclair/typebox";
 import { ZodSchema } from "zod";
-import { createSchema } from "zod-openapi";
 
 /**
  * OpenAPI metadata for the route.
@@ -31,7 +31,7 @@ export type OpenAPIMetadata = {
 export function convertValidationSchemaToOpenAPI3_1Schema(schema: AnyValidationSchema): OpenAPIV3_1.SchemaObject {
     // Handle Zod schemas
     if (schema instanceof ZodSchema) {
-        return createSchema(schema).schema as OpenAPIV3_1.SchemaObject;
+        return generateSchema(schema) as OpenAPIV3_1.SchemaObject;
     }
 
     // Handle TypeBox schemas

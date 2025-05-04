@@ -30,7 +30,7 @@ const app = new Switchblade({
 
 ## Automatic Documentation Generation
 
-Switchblade automatically generates OpenAPI documentation based on your route definitions. You can use [zod-openapi](https://www.npmjs.com/package/zod-openapi) library to define openapi for your Zod schemas, or if you are using [Typebox](https://www.npmjs.com/package/@sinclair/typebox/v/0.23.3#OpenAPI), it's already compatible with OpenAPI.
+Switchblade automatically generates OpenAPI documentation based on your route definitions. You can use [@anatine/zod-openapi](https://www.npmjs.com/package/@anatine/zod-openapi) library to define openapi for your Zod schemas, or if you are using [Typebox](https://www.npmjs.com/package/@sinclair/typebox/v/0.23.3#OpenAPI), it's already compatible with OpenAPI.
 
 ```typescript
 app.post(
