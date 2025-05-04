@@ -3,11 +3,6 @@ import type { OpenAPIV3_1 } from "openapi-types";
 
 import { convertValidationSchemaToOpenAPI3_1Schema, SBRequest, SBResponse } from "..";
 
-import { z } from "zod";
-import { extendZodWithOpenApi } from "zod-openapi";
-
-extendZodWithOpenApi(z);
-
 /**
  * Configuration options for Switchblade.
  */

@@ -1,12 +1,12 @@
 import { Switchblade } from "../src";
 import { createHonoAdapter } from "../src/adapters/hono";
 
+import { extendZodWithOpenApi } from "@anatine/zod-openapi";
 import { serve } from "@hono/node-server";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Type } from "@sinclair/typebox";
 import { AssertError } from "@sinclair/typebox/value";
 import { z, ZodError } from "zod";
-import { extendZodWithOpenApi } from "zod-openapi";
 
 import assert from "node:assert";
 import { describe, it } from "node:test";
@@ -76,6 +76,7 @@ const userRoutes = new Switchblade()
                     .refine((v) => !isNaN(Number(v)), {
                         message: "ID must be a number",
                     })
+                    .transform((v) => Number(v))
                     .openapi({
                         description: "The page number for pagination",
                         example: "1",
