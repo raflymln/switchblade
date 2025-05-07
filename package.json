@@ -29,11 +29,11 @@
             "require": "./dist/index.cjs",
             "default": "./dist/index.js"
         },
-        "./adapters/hono": {
-            "types": "./dist/adapters/hono.d.ts",
-            "import": "./dist/adapters/hono.js",
-            "require": "./dist/adapters/hono.cjs",
-            "default": "./dist/adapters/hono.js"
+        "./adapters/*": {
+            "types": "./dist/adapters/*.d.ts",
+            "import": "./dist/adapters/*.js",
+            "require": "./dist/adapters/*.cjs",
+            "default": "./dist/adapters/*.js"
         }
     },
     "main": "./dist/index.js",
