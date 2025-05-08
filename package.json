@@ -1,6 +1,6 @@
 {
     "name": "@takodotid/switchblade",
-    "version": "1.0.0-rc.6",
+    "version": "1.0.0-rc.7",
     "description": "2nd level Javascript framework abstraction",
     "keywords": [
         "zod",
