@@ -66,11 +66,8 @@ export class SBResponse<
      * @param contentType Content type
      * @param charset Charset
      */
-    setContentType<ContentType extends keyof Responses[StatusCode]["content"] & string>(
-        contentType: ContentType | (string & NonNullable<unknown>),
-        charset: string = "utf-8"
-    ): SBResponse<Responses, StatusCode, ContentType> {
-        this.headers.set("Content-Type", `${contentType}; charset=${charset}`);
+    setContentType<ContentType extends keyof Responses[StatusCode]["content"] & string>(contentType: ContentType | (string & NonNullable<unknown>)): SBResponse<Responses, StatusCode, ContentType> {
+        this.contentType = contentType;
         return this as never;
     }
 
