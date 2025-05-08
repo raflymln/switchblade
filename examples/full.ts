@@ -14,16 +14,31 @@ import { describe, it } from "node:test";
 extendZodWithOpenApi(z);
 
 const userRoutes = new Switchblade()
-    .use(async (req, res, next) => {
-        // Always use lower case for headers
-        const token = req.headers.authorization;
+    .use(
+        async (req, res, next) => {
+            // Always use lower case for headers
+            const token = req.headers.authorization;
 
-        if (!token) {
-            throw new Error("No authorization token");
+            if (!token) {
+                throw new Error("No authorization token");
+            }
+
+            await next();
+        },
+        {
+            headers: {
+                // This will be passed to the registered route below
+                authorization: z.string().openapi({
+                    description: "Bearer token for authorization",
+                    example: "Bearer abcdef123456",
+                }),
+            },
+            openapi: {
+                // This also will be passed to the registered route below
+                tags: ["Users"],
+            },
         }
-
-        await next();
-    })
+    )
     .get(
         "/",
         (req, res) => {
@@ -37,7 +52,6 @@ const userRoutes = new Switchblade()
         {
             openapi: {
                 summary: "List all users",
-                tags: ["Users"],
             },
         }
     )
@@ -81,13 +95,6 @@ const userRoutes = new Switchblade()
                         description: "The page number for pagination",
                         example: "1",
                     }),
-            },
-            headers: {
-                // Always use lower case for headers
-                authorization: z.string().openapi({
-                    description: "Bearer token for authorization",
-                    example: "Bearer abcdef123456",
-                }),
             },
             cookies: {
                 sessionId: z.string().optional().openapi({
@@ -145,7 +152,6 @@ const userRoutes = new Switchblade()
             },
             openapi: {
                 summary: "Update a user",
-                tags: ["Users"],
             },
         }
     );
@@ -203,7 +209,16 @@ const mainApp = new Switchblade({
         console.error(error);
     })
     // User Management Routes
-    .group("/users", userRoutes)
+    .group("/users", userRoutes, {
+        headers: {
+            // This will be passed to the registered route inside the group
+            // Always use lower case for headers
+            "x-region": z.string().openapi({
+                description: "The region of the user",
+                example: "us-east-1",
+            }),
+        },
+    })
     // OpenAPI Document
     .get("/openapi.json", (req, res) => {
         const openapiDoc = req.app.getOpenAPI3_1Document();

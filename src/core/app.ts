@@ -1,4 +1,4 @@
-import type { SBRequestParamSchema, SBResponseSchema, OpenAPIMetadata, SBRequestBodySchema } from "..";
+import type { SBRequestParamSchema, SBResponseSchema, OpenAPIMetadata, SBRequestBodySchema, SBRequestHeaders } from "..";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 import { convertValidationSchemaToOpenAPI3_1Schema, SBRequest, SBResponse } from "..";
@@ -19,15 +19,42 @@ export type RegisteredRoute = {
     method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" | "OPTIONS" | (string & NonNullable<unknown>);
     path: string;
     handler: RouteHandler;
-    middlewares: Middleware[];
+    middlewares: RegisteredMiddleware[];
     errorHandlers: ErrorHandler[];
+    /** OpenAPI metadata of the current route. */
+    openAPI?: OpenAPIMetadata;
+    /** Merged OpenAPI metadata from the route and middlewares. */
+    mergedOpenAPI?: OpenAPIMetadata;
+    /** Validation schema of the current route. */
     validation?: RouteValidationOptions;
-    openapi?: OpenAPIMetadata;
+    /** Merged validation schema from the route and middlewares. */
+    mergedValidation?: RouteValidationOptions;
     run: (request: Request, params?: Record<string, string>) => Promise<Response>;
 };
 
+/**
+ * Registered middleware object.
+ * This is the object that is returned when a middleware is registered.
+ */
+export type RegisteredMiddleware = {
+    handler: Middleware;
+    validation?: Omit<RouteValidationOptions, "responses">; // Middleware doesn't have responses
+    openapi?: OpenAPIMetadata;
+};
+
 export type ErrorHandler = (error: unknown, req: SBRequest, res: SBResponse) => unknown;
-export type Middleware = (req: SBRequest, res: SBResponse, next: () => unknown) => unknown;
+
+/**
+ * Middleware type for Switchblade.
+ */
+export type Middleware<
+    Params extends SBRequestParamSchema = SBRequestParamSchema,
+    Query extends SBRequestParamSchema = SBRequestParamSchema,
+    Body extends SBRequestBodySchema = SBRequestBodySchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
+    Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+    Responses extends SBResponseSchema = SBResponseSchema,
+> = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>, next: () => unknown) => unknown;
 
 /**
  * Route handler type for both middleware and route handler.
@@ -36,7 +63,7 @@ export type RouteHandler<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 > = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => unknown;
@@ -48,7 +75,7 @@ export type RouteValidationOptions<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 > = {
@@ -67,7 +94,7 @@ export type RouteOptions<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 > = RouteValidationOptions<Params, Query, Body, Headers, Cookies, Responses> & {
@@ -82,7 +109,7 @@ export type RouteMethod = <
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 >(
@@ -121,7 +148,7 @@ export class Switchblade {
     /**
      * List of registered middlewares on Switchblade
      */
-    middlewares: Middleware[] = [];
+    middlewares: RegisteredMiddleware[] = [];
 
     /**
      * Get the registered route by method and path
@@ -169,37 +196,37 @@ export class Switchblade {
         };
 
         for (const route of instance.routes) {
-            if (route.openapi?.hide) continue; // Skip if route is hidden or openapi is not provided
+            if (route.mergedOpenAPI?.hide) continue; // Skip if route is hidden or openapi is not provided
 
             const fullPath = `${instance.config?.basePath || ""}${route.path}`.replace(/:([a-zA-Z0-9_]+)/g, (_, paramName) => `{${paramName}}`);
             if (!document.paths![fullPath]) document.paths![fullPath] = {};
 
             const metadata: OpenAPIV3_1.OperationObject = {
-                ...(route.openapi || {}),
+                ...(route.mergedOpenAPI || {}),
                 responses: {},
                 parameters: [],
             };
 
-            if (route.validation?.body) {
+            if (route.mergedValidation?.body) {
                 metadata.requestBody = {
-                    required: route.validation.body.required,
-                    description: route.validation.body.description || "",
-                    summary: route.validation.body.summary || "",
+                    required: route.mergedValidation.body.required,
+                    description: route.mergedValidation.body.description || "",
+                    summary: route.mergedValidation.body.summary || "",
                     content: {},
                 };
 
-                Object.entries(route.validation.body.content).forEach(([contentType, schema]) => {
+                Object.entries(route.mergedValidation.body.content).forEach(([contentType, schema]) => {
                     (metadata.requestBody as OpenAPIV3_1.RequestBodyObject)!.content![contentType] = {
                         schema: convertValidationSchemaToOpenAPI3_1Schema(schema),
                     };
                 });
             }
 
-            const params: [SBRequestParamSchema | undefined, string][] = [
-                [route.validation?.query, "query"],
-                [route.validation?.params, "path"],
-                [route.validation?.headers, "header"],
-                [route.validation?.cookies, "cookie"],
+            const params: [SBRequestParamSchema | SBRequestHeaders | undefined, string][] = [
+                [route.mergedValidation?.query, "query"],
+                [route.mergedValidation?.params, "path"],
+                [route.mergedValidation?.headers, "header"],
+                [route.mergedValidation?.cookies, "cookie"],
             ];
 
             for (const [validation, inType] of params) {
@@ -215,8 +242,8 @@ export class Switchblade {
                 });
             }
 
-            if (route.validation?.responses) {
-                Object.entries(route.validation.responses).forEach(([statusCode, config]) => {
+            if (route.mergedValidation?.responses) {
+                Object.entries(route.mergedValidation.responses).forEach(([statusCode, config]) => {
                     const response: OpenAPIV3_1.ResponseObject = {
                         description: (config as SBResponseSchema[number]).description || "",
                         content: {},
@@ -256,6 +283,7 @@ export class Switchblade {
      * request handlers that are registered after it.
      *
      * @param middleware The middleware function
+     * @param options The middleware options (same as route options except responses)
      *
      * @example
      * ```ts
@@ -264,8 +292,24 @@ export class Switchblade {
      *    .get("/users", handler) // Will be intercepted by the middleware
      * ```
      */
-    use(middleware: Middleware): this {
-        this.middlewares.push(middleware);
+    use<
+        Params extends SBRequestParamSchema = SBRequestParamSchema,
+        Query extends SBRequestParamSchema = SBRequestParamSchema,
+        Body extends SBRequestBodySchema = SBRequestBodySchema,
+        Headers extends SBRequestHeaders = SBRequestHeaders,
+        Cookies extends SBRequestParamSchema = SBRequestParamSchema,
+    >(middleware: Middleware<Params, Query, Body, Headers, Cookies>, options?: Omit<RouteOptions<Params, Query, Body, Headers, Cookies>, "responses">): this {
+        this.middlewares.push({
+            handler: middleware as never,
+            validation: {
+                body: options?.body,
+                params: options?.params,
+                query: options?.query,
+                headers: options?.headers,
+                cookies: options?.cookies,
+            },
+            openapi: options?.openapi,
+        });
         return this;
     }
 
@@ -303,7 +347,7 @@ export class Switchblade {
         Params extends SBRequestParamSchema = SBRequestParamSchema,
         Query extends SBRequestParamSchema = SBRequestParamSchema,
         Body extends SBRequestBodySchema = SBRequestBodySchema,
-        Headers extends SBRequestParamSchema = SBRequestParamSchema,
+        Headers extends SBRequestHeaders = SBRequestHeaders,
         Cookies extends SBRequestParamSchema = SBRequestParamSchema,
         Responses extends SBResponseSchema = SBResponseSchema,
     >(
@@ -330,7 +374,7 @@ export class Switchblade {
             path = path.slice(0, -1);
         }
 
-        const app = this.getOriginalInstance();
+        const getApp = () => this.getOriginalInstance();
 
         const route: RegisteredRoute = {
             method,
@@ -338,7 +382,22 @@ export class Switchblade {
             handler: handler as never,
             middlewares: [...this.middlewares],
             errorHandlers: [...this.errorHandlers],
-            openapi: options?.openapi,
+            openAPI: options?.openapi,
+            get mergedOpenAPI() {
+                const meta = {} as OpenAPIMetadata;
+
+                for (const middleware of this.middlewares) {
+                    if (middleware.openapi) {
+                        Object.assign(meta, middleware.openapi);
+                    }
+                }
+
+                if (this.openAPI) {
+                    Object.assign(meta, this.openAPI);
+                }
+
+                return Object.keys(meta).length > 0 ? meta : undefined;
+            },
             validation: {
                 body: options?.body,
                 params: options?.params,
@@ -347,16 +406,79 @@ export class Switchblade {
                 responses: options?.responses,
                 cookies: options?.cookies,
             },
+            get mergedValidation() {
+                const body = { content: {} } as SBRequestBodySchema;
+                const params = {} as SBRequestParamSchema;
+                const query = {} as SBRequestParamSchema;
+                const headers = {} as SBRequestHeaders;
+                const cookies = {} as SBRequestParamSchema;
+                const responses = this.validation?.responses; // Middleware doesn't have responses
+
+                for (const middleware of this.middlewares) {
+                    if (middleware.validation?.body) {
+                        body.content = middleware.validation.body.content;
+                        body.required = middleware.validation.body.required;
+                        body.description = middleware.validation.body.description;
+                        body.summary = middleware.validation.body.summary;
+                        Object.assign(body.content, middleware.validation.body.content);
+                    }
+
+                    if (middleware.validation?.params) {
+                        Object.assign(params, middleware.validation.params);
+                    }
+
+                    if (middleware.validation?.query) {
+                        Object.assign(query, middleware.validation.query);
+                    }
+
+                    if (middleware.validation?.headers) {
+                        Object.assign(headers, middleware.validation.headers);
+                    }
+
+                    if (middleware.validation?.cookies) {
+                        Object.assign(cookies, middleware.validation.cookies);
+                    }
+                }
+
+                if (this.validation?.body) {
+                    Object.assign(body, this.validation.body);
+                }
+
+                if (this.validation?.params) {
+                    Object.assign(params, this.validation.params);
+                }
+
+                if (this.validation?.query) {
+                    Object.assign(query, this.validation.query);
+                }
+
+                if (this.validation?.headers) {
+                    Object.assign(headers, this.validation.headers);
+                }
+
+                if (this.validation?.cookies) {
+                    Object.assign(cookies, this.validation.cookies);
+                }
+
+                return {
+                    body: Object.keys(body.content).length > 0 ? body : undefined,
+                    params: Object.keys(params).length > 0 ? params : undefined,
+                    query: Object.keys(query).length > 0 ? query : undefined,
+                    headers: Object.keys(headers).length > 0 ? headers : undefined,
+                    cookies: Object.keys(cookies).length > 0 ? cookies : undefined,
+                    responses: Object.keys(responses || {}).length > 0 ? responses : undefined,
+                };
+            },
             async run(request, params = {}) {
-                const sbReq = new SBRequest(app, request, params as never, {
-                    query: this.validation?.query,
-                    params: this.validation?.params,
-                    headers: this.validation?.headers,
-                    body: this.validation?.body,
-                    cookies: this.validation?.cookies,
+                const sbReq = new SBRequest(getApp(), request, params as never, {
+                    query: this.mergedValidation?.query,
+                    params: this.mergedValidation?.params,
+                    headers: this.mergedValidation?.headers,
+                    body: this.mergedValidation?.body,
+                    cookies: this.mergedValidation?.cookies,
                 });
 
-                const sbRes = new SBResponse(this.validation?.responses);
+                const sbRes = new SBResponse(this.mergedValidation?.responses);
 
                 try {
                     // Cache & validate the request params
@@ -376,7 +498,7 @@ export class Switchblade {
                         }
 
                         // Iterate through the middlewares
-                        await this.middlewares[middlewareIndex++](sbReq, sbRes, run);
+                        await this.middlewares[middlewareIndex++].handler(sbReq, sbRes, run);
                     };
 
                     await run();
@@ -422,6 +544,7 @@ export class Switchblade {
      *
      * @param path The base path to the routes inside the group
      * @param cb The sub instance of Switchblade
+     * @param options The route options (same as route options except responses)
      *
      * @example
      * ```ts
@@ -432,7 +555,7 @@ export class Switchblade {
      * });
      * ```
      */
-    group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade)): this {
+    group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade), options?: Omit<RouteOptions, "responses">): this {
         const subApp = cb instanceof Switchblade ? cb : cb(new Switchblade());
 
         subApp.config = this.getOriginalInstance().config;
@@ -454,6 +577,61 @@ export class Switchblade {
         }
 
         for (const route of subApp.routes) {
+            if (!route.validation) route.validation = {};
+
+            if (options?.openapi) {
+                const openAPI = Object.assign(route.openAPI || {}, options?.openapi);
+
+                if (Object.keys(openAPI).length > 0) {
+                    route.openAPI = openAPI;
+                }
+            }
+
+            if (options?.cookies) {
+                const cookies = Object.assign(route.validation?.cookies || {}, options.cookies);
+
+                if (Object.keys(cookies).length > 0) {
+                    route.validation.cookies = cookies;
+                }
+            }
+
+            if (options?.headers) {
+                const headers = Object.assign(route.validation?.headers || {}, options.headers);
+
+                if (Object.keys(headers).length > 0) {
+                    route.validation.headers = headers;
+                }
+            }
+
+            if (options?.params) {
+                const params = Object.assign(route.validation?.params || {}, options.params);
+
+                if (Object.keys(params).length > 0) {
+                    route.validation.params = params;
+                }
+            }
+
+            if (options?.query) {
+                const query = Object.assign(route.validation?.query || {}, options.query);
+
+                if (Object.keys(query).length > 0) {
+                    route.validation.query = query;
+                }
+            }
+
+            if (options?.body) {
+                const body = (route.validation?.body || {}) as SBRequestBodySchema;
+
+                body.description = options.body.description || body.description;
+                body.summary = options.body.summary || body.summary;
+                body.required = options.body.required || body.required;
+                body.content = Object.assign(body.content, options.body.content);
+
+                if (Object.keys(body.content).length > 0) {
+                    route.validation.body = body;
+                }
+            }
+
             this.routes.push({
                 ...route,
                 path: `${path}${route.path}`,

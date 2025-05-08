@@ -8,6 +8,10 @@ Middleware in Switchblade provides a powerful way to intercept and modify reques
 
 Middleware is applied in the chained order of the routes.
 
+::: tip
+Middleware also have it's own options (validation & openapi, except responses validation) like a route, which then will be passed to the registered route below it.
+:::
+
 ## Usage
 
 ::: warning
@@ -23,15 +27,36 @@ import { Switchblade } from "@takodotid/switchblade";
 
 const app = new Switchblade()
     // Global middleware since it's defined first before any route
-    .use((req, res, next) => {
-        console.log(`Incoming ${req.method} request to ${req.url}`);
-        // You can modify request or set additional properties
-        req.state.requestTime = Date.now();
-        next();
-    })
-    .get("/users", (req, res) => {
-        return res.json({ users: [] });
-    })
+    .use(
+        (req, res, next) => {
+            console.log(`Incoming ${req.method} request to ${req.url}`);
+            // You can modify request or set additional properties
+            req.state.requestTime = Date.now();
+            next();
+        },
+        {
+            openapi: {
+                // This tags will be passed to /users and /users/:id below
+                tags: ["Global"],
+            },
+            headers: {
+                // This `authorization` header will also be passed to /users and /users/:id below
+                authorization: z.string().optional(),
+            },
+        }
+    )
+    .get(
+        "/users",
+        (req, res) => {
+            return res.json({ users: [] });
+        },
+        {
+            openapi: {
+                // This will override the `Global` tags above
+                tags: ["Users"],
+            },
+        }
+    )
     .group("/users/:id", (app) => {
         return (
             app

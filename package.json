@@ -1,6 +1,6 @@
 {
     "name": "@takodotid/switchblade",
-    "version": "1.0.0-rc.6",
+    "version": "1.0.0-rc.7",
     "description": "2nd level Javascript framework abstraction",
     "keywords": [
         "zod",
@@ -29,11 +29,11 @@
             "require": "./dist/index.cjs",
             "default": "./dist/index.js"
         },
-        "./adapters/hono": {
-            "types": "./dist/adapters/hono.d.ts",
-            "import": "./dist/adapters/hono.js",
-            "require": "./dist/adapters/hono.cjs",
-            "default": "./dist/adapters/hono.js"
+        "./adapters/*": {
+            "types": "./dist/adapters/*.d.ts",
+            "import": "./dist/adapters/*.js",
+            "require": "./dist/adapters/*.cjs",
+            "default": "./dist/adapters/*.js"
         }
     },
     "main": "./dist/index.js",

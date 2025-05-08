@@ -85,23 +85,41 @@ app.get("/users/:id/:action", (req, res) => {
 
 Create route groups with shared middleware or base paths. You can use either a callback approach or a sub-instance approach.
 
+::: tip
+Route group also have it's own options (validation & openapi, except responses validation) that will be passed to every route in the group.
+:::
+
 ### Callback Approach
 
 ```typescript
-app.group("/api/v1", (group) => {
-    return group
-        .use((req, res, next) => {
-            // Middleware for all routes in this group
-            console.log("API v1 middleware");
-            next();
-        })
-        .get("/users", (req, res) => {
-            // Handles GET /api/v1/users
-        })
-        .post("/users", (req, res) => {
-            // Handles POST /api/v1/users
-        });
-});
+app.group(
+    "/api/v1",
+    (group) => {
+        return group
+            .use((req, res, next) => {
+                // Middleware for all routes in this group
+                console.log("API v1 middleware");
+                next();
+            })
+            .get("/users", (req, res) => {
+                // Handles GET /api/v1/users
+            })
+            .post("/users", (req, res) => {
+                // Handles POST /api/v1/users
+            });
+    },
+    {
+        openapi: {
+            tags: ["Users"],
+        },
+        headers: {
+            "x-api-key": {
+                type: "string",
+                description: "API key for authentication",
+            },
+        },
+    }
+);
 ```
 
 ### Sub-Instance Approach
