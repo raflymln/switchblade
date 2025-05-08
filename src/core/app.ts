@@ -1,4 +1,4 @@
-import type { SBRequestParamSchema, SBResponseSchema, OpenAPIMetadata, SBRequestBodySchema } from "..";
+import type { SBRequestParamSchema, SBResponseSchema, OpenAPIMetadata, SBRequestBodySchema, SBRequestHeaders } from "..";
 import type { OpenAPIV3_1 } from "openapi-types";
 
 import { convertValidationSchemaToOpenAPI3_1Schema, SBRequest, SBResponse } from "..";
@@ -51,7 +51,7 @@ export type Middleware<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 > = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>, next: () => unknown) => unknown;
@@ -63,7 +63,7 @@ export type RouteHandler<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 > = (req: SBRequest<Params, Query, Body, Headers, Cookies>, res: SBResponse<Responses>) => unknown;
@@ -75,7 +75,7 @@ export type RouteValidationOptions<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 > = {
@@ -94,7 +94,7 @@ export type RouteOptions<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 > = RouteValidationOptions<Params, Query, Body, Headers, Cookies, Responses> & {
@@ -109,7 +109,7 @@ export type RouteMethod = <
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     Responses extends SBResponseSchema = SBResponseSchema,
 >(
@@ -222,7 +222,7 @@ export class Switchblade {
                 });
             }
 
-            const params: [SBRequestParamSchema | undefined, string][] = [
+            const params: [SBRequestParamSchema | SBRequestHeaders | undefined, string][] = [
                 [route.mergedValidation?.query, "query"],
                 [route.mergedValidation?.params, "path"],
                 [route.mergedValidation?.headers, "header"],
@@ -296,7 +296,7 @@ export class Switchblade {
         Params extends SBRequestParamSchema = SBRequestParamSchema,
         Query extends SBRequestParamSchema = SBRequestParamSchema,
         Body extends SBRequestBodySchema = SBRequestBodySchema,
-        Headers extends SBRequestParamSchema = SBRequestParamSchema,
+        Headers extends SBRequestHeaders = SBRequestHeaders,
         Cookies extends SBRequestParamSchema = SBRequestParamSchema,
     >(middleware: Middleware<Params, Query, Body, Headers, Cookies>, options?: Omit<RouteOptions<Params, Query, Body, Headers, Cookies>, "responses">): this {
         this.middlewares.push({
@@ -347,7 +347,7 @@ export class Switchblade {
         Params extends SBRequestParamSchema = SBRequestParamSchema,
         Query extends SBRequestParamSchema = SBRequestParamSchema,
         Body extends SBRequestBodySchema = SBRequestBodySchema,
-        Headers extends SBRequestParamSchema = SBRequestParamSchema,
+        Headers extends SBRequestHeaders = SBRequestHeaders,
         Cookies extends SBRequestParamSchema = SBRequestParamSchema,
         Responses extends SBResponseSchema = SBResponseSchema,
     >(
@@ -410,7 +410,7 @@ export class Switchblade {
                 const body = { content: {} } as SBRequestBodySchema;
                 const params = {} as SBRequestParamSchema;
                 const query = {} as SBRequestParamSchema;
-                const headers = {} as SBRequestParamSchema;
+                const headers = {} as SBRequestHeaders;
                 const cookies = {} as SBRequestParamSchema;
                 const responses = this.validation?.responses; // Middleware doesn't have responses
 

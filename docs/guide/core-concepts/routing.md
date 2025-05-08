@@ -113,7 +113,7 @@ app.group(
             tags: ["Users"],
         },
         headers: {
-            "X-API-Key": {
+            "x-api-key": {
                 type: "string",
                 description: "API key for authentication",
             },

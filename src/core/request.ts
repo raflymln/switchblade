@@ -4,6 +4,8 @@ import { validate } from "..";
 
 import cookie from "cookie";
 
+// Headers must be forced to lowercase
+export type SBRequestHeaders = Record<Lowercase<string>, AnyValidationSchema>;
 export type SBRequestParamSchema = Record<string, AnyValidationSchema>;
 export type SBRequestBodySchema = {
     description?: string;
@@ -16,7 +18,7 @@ export class SBRequest<
     Params extends SBRequestParamSchema = SBRequestParamSchema,
     Query extends SBRequestParamSchema = SBRequestParamSchema,
     Body extends SBRequestBodySchema = SBRequestBodySchema,
-    Headers extends SBRequestParamSchema = SBRequestParamSchema,
+    Headers extends SBRequestHeaders = SBRequestHeaders,
     Cookies extends SBRequestParamSchema = SBRequestParamSchema,
 > {
     private cacheMap: Map<string, unknown> = new Map();
@@ -50,7 +52,7 @@ export class SBRequest<
         public validationSchema?: {
             params?: SBRequestParamSchema;
             query?: SBRequestParamSchema;
-            headers?: SBRequestParamSchema;
+            headers?: SBRequestHeaders;
             cookies?: SBRequestParamSchema;
             body?: SBRequestBodySchema;
         }

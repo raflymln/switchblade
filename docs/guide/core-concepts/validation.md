@@ -37,6 +37,12 @@ const data = req.json<"application/x-www-form-urlencoded">();
 
 :::
 
+::: warning Headers must ALWAYS be lowercase
+You can send fetch request with headers in uppercase, but Switchblade will always convert them to lowercase. So, make sure to use lowercase when validating headers.
+
+Also the type-safe system will make it error if you use uppercase headers in the validation object.
+:::
+
 ```typescript
 app.get(
     "/users/:id",
@@ -130,7 +136,7 @@ app.post(
                     "application/xml": Type.String(),
                 },
                 headers: {
-                    Location: z.string().url(),
+                    location: z.string().url(),
                 },
             },
             400: {
