@@ -209,7 +209,16 @@ const mainApp = new Switchblade({
         console.error(error);
     })
     // User Management Routes
-    .group("/users", userRoutes)
+    .group("/users", userRoutes, {
+        headers: {
+            // This will be passed to the registered route inside the group
+            // Always use lower case for headers
+            authorization: z.string().openapi({
+                description: "The region of the user",
+                example: "us-east-1",
+            }),
+        },
+    })
     // OpenAPI Document
     .get("/openapi.json", (req, res) => {
         const openapiDoc = req.app.getOpenAPI3_1Document();

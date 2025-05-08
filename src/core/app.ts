@@ -283,6 +283,7 @@ export class Switchblade {
      * request handlers that are registered after it.
      *
      * @param middleware The middleware function
+     * @param options The middleware options (same as route options except responses)
      *
      * @example
      * ```ts
@@ -543,6 +544,7 @@ export class Switchblade {
      *
      * @param path The base path to the routes inside the group
      * @param cb The sub instance of Switchblade
+     * @param options The route options (same as route options except responses)
      *
      * @example
      * ```ts
@@ -553,7 +555,7 @@ export class Switchblade {
      * });
      * ```
      */
-    group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade)): this {
+    group(path: string, cb: Switchblade | ((app: Switchblade) => Switchblade), options?: Omit<RouteOptions, "responses">): this {
         const subApp = cb instanceof Switchblade ? cb : cb(new Switchblade());
 
         subApp.config = this.getOriginalInstance().config;
@@ -575,6 +577,61 @@ export class Switchblade {
         }
 
         for (const route of subApp.routes) {
+            if (!route.validation) route.validation = {};
+
+            if (options?.openapi) {
+                const openAPI = Object.assign(route.openAPI || {}, options?.openapi);
+
+                if (Object.keys(openAPI).length > 0) {
+                    route.openAPI = openAPI;
+                }
+            }
+
+            if (options?.cookies) {
+                const cookies = Object.assign(route.validation?.cookies || {}, options.cookies);
+
+                if (Object.keys(cookies).length > 0) {
+                    route.validation.cookies = cookies;
+                }
+            }
+
+            if (options?.headers) {
+                const headers = Object.assign(route.validation?.headers || {}, options.headers);
+
+                if (Object.keys(headers).length > 0) {
+                    route.validation.headers = headers;
+                }
+            }
+
+            if (options?.params) {
+                const params = Object.assign(route.validation?.params || {}, options.params);
+
+                if (Object.keys(params).length > 0) {
+                    route.validation.params = params;
+                }
+            }
+
+            if (options?.query) {
+                const query = Object.assign(route.validation?.query || {}, options.query);
+
+                if (Object.keys(query).length > 0) {
+                    route.validation.query = query;
+                }
+            }
+
+            if (options?.body) {
+                const body = (route.validation?.body || {}) as SBRequestBodySchema;
+
+                body.description = options.body.description || body.description;
+                body.summary = options.body.summary || body.summary;
+                body.required = options.body.required || body.required;
+                body.content = Object.assign(body.content, options.body.content);
+
+                if (Object.keys(body.content).length > 0) {
+                    route.validation.body = body;
+                }
+            }
+
             this.routes.push({
                 ...route,
                 path: `${path}${route.path}`,
