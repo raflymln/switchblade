@@ -213,7 +213,7 @@ const mainApp = new Switchblade({
         headers: {
             // This will be passed to the registered route inside the group
             // Always use lower case for headers
-            authorization: z.string().openapi({
+            "x-region": z.string().openapi({
                 description: "The region of the user",
                 example: "us-east-1",
             }),
